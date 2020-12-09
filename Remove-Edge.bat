@@ -22,6 +22,8 @@ if %errorLevel% == 0 (
 set "EXIST=0"
 :: Stop Edge Task
 taskkill /im "msedge.exe" /f  >nul 2>&1
+::Do not install Edge from Windows Updates
+reg add HKLM\SOFTWARE\Microsoft\EdgeUpdate /t REG_DWORD /v DoNotUpdateToEdgeWithChromium /d 1 /f >nul 2>&1
 
 :: Uninstall - 32Bit
 if exist "C:\Program Files (x86)\Microsoft\Edge\Application\" (
