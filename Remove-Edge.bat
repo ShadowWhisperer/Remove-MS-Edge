@@ -31,9 +31,6 @@ cd /d "C:\Program Files (x86)\Microsoft\Edge\Application\%%a\Installer\"
 if exist "setup.exe" (
 echo - Removing Microsoft Edge
 start /w setup.exe --uninstall --system-level --force-uninstall)
-takeown /F "C:\Program Files (x86)\Microsoft\Edge\" /A /R /D y >nul 2>&1
-icacls "C:\Program Files (x86)\Microsoft\Edge\" /grant administrators:F /T >nul 2>&1
-rmdir /s/q "C:\Program Files (x86)\Microsoft\Edge\" >nul 2>&1
 echo Finished
 timeout /t 3 & exit
 ))
@@ -46,9 +43,6 @@ cd /d "C:\Program Files\Microsoft\Edge\Application\%%a\Installer\"
 if exist "setup.exe" (
 echo - Removing Microsoft Edge
 start /w setup.exe --uninstall --system-level --force-uninstall)
-takeown /F "C:\Program Files\Microsoft\Edge\" /A /R /D y >nul 2>&1
-icacls "C:\Program Files\Microsoft\Edge\" /grant administrators:F /T >nul 2>&1
-rmdir /s/q "C:\Program Files\Microsoft\Edge\" >nul 2>&1
 echo Finished
 timeout /t 3 & exit
 ))
