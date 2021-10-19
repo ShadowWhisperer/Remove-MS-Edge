@@ -4,7 +4,7 @@ Microsoft Edge (Chromium) uninstall script.
 ```diff
 ! WARNING
 Removal of Edge will cause update "KB5006670" to continuasly fail/rollback.
-Install Edge, run Windows Ppdates, and remove Edge, to fix Windows Updates
+Install Edge, run Windows Updates, and remove Edge, to fix Windows Updates
 
 https://www.microsoft.com/en-us/edge
 ```
