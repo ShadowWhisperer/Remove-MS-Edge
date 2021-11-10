@@ -4,7 +4,7 @@ Microsoft Edge (Chromium) uninstall script.
 ```diff
 ! WARNING
 Removal of Edge will cause update "KB5006670" to repeatedly fail/rollback.
-Install Edge, run Windows Updates, and remove Edge, to fix Windows Updates
+Install Edge, run Windows Update, and remove Edge, to fix Windows Update.
 
 https://www.microsoft.com/en-us/edge
 ```
@@ -13,4 +13,4 @@ The Microsoft Edge uninstaller is located at "C:\Program Files (x86)\Microsoft\E
 This batch script finds the version number and runs the uninstaller.
 I have not seen it located under the 64bit directory, but it's there, in case it changes.
 
-Save this script anywhere and run it as Admin.
+Save this script anywhere and run it as administrator.
