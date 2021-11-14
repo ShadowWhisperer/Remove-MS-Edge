@@ -50,9 +50,5 @@ timeout /t 3 & exit
 :: Delete Edge icon from the desktop of all users
 for /f "delims=" %%a in ('dir /b "C:\Users"') do del /S /Q "C:\Users\%%a\Desktop\edge.lnk" >nul 2>&1
 
-
 :: Not Installed
-if "%EXIST%"=="0" (
-echo. & echo Edge ^(Chromium^) Is Not Installed & echo.
-timeout /t 3 & exit)
-
+if "%EXIST%"=="0" echo. & echo Edge ^(Chromium^) Is Not Installed & echo. & timeout /t 3 & exit
