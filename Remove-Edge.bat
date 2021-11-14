@@ -7,17 +7,11 @@
 :: Creator: ShadowWhisperer
 ::  Github: https://github.com/ShadowWhisperer
 :: Created: 12/09/2020
-:: Updated: 11/10/2021
+:: Updated: 11/14/2021
 ::
 
 :: Check if ran as Admin
-net session >nul 2>&1
-if %errorLevel% == 0 (
- cls
-) else (
- echo. & echo Run Script As Admin & echo.
- pause & exit
-)
+net session >nul 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
 
 :: Set Exist Variable - Check if Edge is intalled  *Show Message, if not installed
 set "EXIST=0"
