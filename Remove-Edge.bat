@@ -7,7 +7,7 @@
 :: Creator: ShadowWhisperer
 ::  Github: https://github.com/ShadowWhisperer
 :: Created: 12/09/2020
-:: Updated: 11/14/2021
+:: Updated: 02/03/2022
 ::
 
 :: Check if ran as Admin
@@ -48,7 +48,10 @@ timeout /t 3 & exit
 
 
 :: Delete Edge icon from the desktop of all users
-for /f "delims=" %%a in ('dir /b "C:\Users"') do del /S /Q "C:\Users\%%a\Desktop\edge.lnk" >nul 2>&1
+for /f "delims=" %%a in ('dir /b "C:\Users"') do (
+del /S /Q "C:\Users\%%a\Desktop\edge.lnk" >nul 2>&1
+del /S /Q "C:\Users\%%a\Desktop\Microsoft Edge.lnk" >nul 2>&1
+)
 
 :: Not Installed
 if "%EXIST%"=="0" echo. & echo Edge ^(Chromium^) Is Not Installed & echo. & timeout /t 3 & exit
