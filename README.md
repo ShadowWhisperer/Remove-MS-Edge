@@ -1,4 +1,4 @@
-Microsoft Edge (Chromium) uninstall script.
+Microsoft Edge (Chromium) / Edge WebView uninstall script.
 
 
 ```diff
@@ -9,8 +9,7 @@ Install Edge, run Windows Updates, and remove Edge, to fix Windows Updates
 https://www.microsoft.com/en-us/edge
 ```
 
-The Microsoft Edge uninstaller is located at "C:\Program Files (x86)\Microsoft\Edge\Application\VERSION-NUMBER\Installer\"
-This batch script finds the version number and runs the uninstaller.
-I have not seen it located under the 64bit directory, but it's there, in case it changes.
+The Microsoft Edge uninstaller is located at "C:\Program Files (x86)\Microsoft\Edge\Application\VERSION-NUMBER\Installer\"  
+This batch script finds the version number and runs the uninstaller.  
 
 Save this script anywhere and run it as Admin.
