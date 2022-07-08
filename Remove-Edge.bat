@@ -19,30 +19,26 @@ set "EXIST=0"
 :: Stop Edge Task
 taskkill /im "msedge.exe" /f  >nul 2>&1
 
-::Do not install Edge from Windows Updates (Does not appear to work anymore)
-reg add HKLM\SOFTWARE\Microsoft\EdgeUpdate /t REG_DWORD /v DoNotUpdateToEdgeWithChromium /d 1 /f >nul 2>&1
-
-
 
 :: Uninstall - Edge
 if exist "C:\Program Files (x86)\Microsoft\Edge\Application\" (
 for /f "delims=" %%a in ('dir /b "C:\Program Files (x86)\Microsoft\Edge\Application\"') do (
-cd /d "C:\Program Files (x86)\Microsoft\Edge\Application\%%a\Installer\"
+cd /d "C:\Program Files (x86)\Microsoft\Edge\Application\%%a\Installer\" >nul 2>&1
 if exist "setup.exe" (
 set "EXIST=1"
 echo - Removing Microsoft Edge
-start /w setup.exe --uninstall --system-level --force-uninstall
-)))
+start /w setup.exe --uninstall --system-level --force-uninstall)
+))
 
 :: Uninstall - EdgeWebView
 if exist "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\" (
 for /f "delims=" %%a in ('dir /b "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\"') do (
-cd /d "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\%%a\Installer\"
+cd /d "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\%%a\Installer\" >nul 2>&1
 if exist "setup.exe" (
-set "EXIST=1"
 echo - Removing EdgeWebView
-start /w setup.exe --uninstall --msedgewebview --system-level --force-uninstall
-)))
+start /w setup.exe --uninstall --msedgewebview --system-level --force-uninstall)
+))
+
 
 :: Delete Edge desktop icon, from all users
 for /f "delims=" %%a in ('dir /b "C:\Users"') do (
