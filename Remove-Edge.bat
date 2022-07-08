@@ -7,7 +7,7 @@
 :: Creator: ShadowWhisperer
 ::  Github: https://github.com/ShadowWhisperer
 :: Created: 12/09/2020
-:: Updated: 07/07/2022
+:: Updated: 07/08/2022
 ::
 
 :: Check if ran as Admin
@@ -31,7 +31,8 @@ cd /d "C:\Program Files (x86)\Microsoft\Edge\Application\%%a\Installer\"
 if exist "setup.exe" (
 set "EXIST=1"
 echo - Removing Microsoft Edge
-start /w setup.exe --uninstall --system-level --force-uninstall)))
+start /w setup.exe --uninstall --system-level --force-uninstall
+)))
 
 :: Uninstall - EdgeWebView
 if exist "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\" (
@@ -40,8 +41,8 @@ cd /d "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\%%a\Installer\"
 if exist "setup.exe" (
 set "EXIST=1"
 echo - Removing EdgeWebView
-start /w setup.exe --uninstall --msedgewebview --system-level --force-uninstall)))
-
+start /w setup.exe --uninstall --msedgewebview --system-level --force-uninstall
+)))
 
 :: Delete Edge desktop icon, from all users
 for /f "delims=" %%a in ('dir /b "C:\Users"') do (
