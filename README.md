@@ -9,4 +9,4 @@ Install Edge, run Windows Updates, then remove Edge
 https://www.microsoft.com/en-us/edge
 ```
 
-Save this script anywhere, then run it as Admin.
+Run either the script or the executable, as Admin.
