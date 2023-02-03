@@ -4,6 +4,8 @@
 :: Checks if Microsoft Edge is installed, and uninstall it and EdgeWebView
 :: Only Works with the newer Edge, built on Chromium
 ::
+:: Some systems error out, use the .exe version of this to fix
+::
 :: Creator: ShadowWhisperer
 ::  Github: https://github.com/ShadowWhisperer
 :: Created: 12/09/2020
