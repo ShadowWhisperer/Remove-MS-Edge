@@ -1,9 +1,9 @@
-**Microsoft Edge (Chromium) / Edge WebView uninstall script**
+**Microsoft Edge (Chromium) / Edge WebView uninstaller**
 
 ```diff
 ! NOTE
 Some systems will not un-install with the .bat script.
-Use the .exe version. if this happens.
+Use the .exe version, if this happens.
 
 
 ! WARNING
@@ -16,5 +16,4 @@ https://www.microsoft.com/en-us/edge
 
 Run either the script or the executable, as Admin.  
 
-Executable version may be flagged by your antivirus.
-Converted from the .bat file with [Bat To Exe Converter](https://www.majorgeeks.com/files/details/bat_to_exe_converter.html).  
+_Source contains the python script used in the executable file. Setup.exe was pulled from an Edge intall.
