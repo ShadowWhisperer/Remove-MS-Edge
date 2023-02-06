@@ -18,13 +18,12 @@
 # Add Edge Apps to "EndOfLife" in Registry
 #
 
-import ctypes      #Check if ran as an admin / Get User SID / Window title
+import ctypes      #Check if ran as an admin / Window title
 import getpass     #Take Permissions
 import os          #System os paths
 import sys         #Check if ran as an admin
 import subprocess  #Run setup.exe file
 import time        #Sleep command
-import winreg      #Windows registry
 
 # Set Script Title
 ctypes.windll.kernel32.SetConsoleTitleW("Remove MS Edge (Chrome Version)")
