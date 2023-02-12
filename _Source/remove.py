@@ -5,8 +5,7 @@
 # Checks if Chrome based version of Edge is installed / Finds the correct directory
 #  Checks if "setup.exe" exists
 #   Replace the uninstaller "setup.exe" for Edge, with a working/older version
-#    Wait 2 seconds to be sure it finished copying
-#     Runs the uninstall command
+#    Runs the uninstall command
 #
 # Searches for EdgeWebView directory
 #  Checks if "setup.exe" exists
@@ -15,7 +14,6 @@
 # Delete desktop icons
 # Delete startmenu icons
 # Delete other files
-# Add Edge Apps to "EndOfLife" in Registry
 #
 
 import ctypes      #Check if ran as an admin / Window title
@@ -23,7 +21,6 @@ import getpass     #Take Permissions
 import os          #System os paths
 import sys         #Check if ran as an admin
 import subprocess  #Run setup.exe file
-import time        #Sleep command
 
 # Set Script Title
 ctypes.windll.kernel32.SetConsoleTitleW("Remove MS Edge (Chrome Version)")
@@ -49,7 +46,6 @@ else:
                 print("Removing Microsoft Edge")
                 os.chdir(installer_dir)
                 os.replace(src, "setup.exe")
-                time.sleep(2)
                 subprocess.run(["setup.exe", "--uninstall", "--system-level", "--force-uninstall"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
