@@ -21,6 +21,7 @@ import getpass     #Take Permissions
 import os          #System os paths
 import sys         #Check if ran as an admin
 import subprocess  #Run setup.exe file
+import winreg      #Modify Windows Registry (Remove Edge Appx Packages)
 
 # Set Script Title
 ctypes.windll.kernel32.SetConsoleTitleW("Remove MS Edge (Chrome Version)")
@@ -78,3 +79,32 @@ else:
         subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
         os.remove(f.path)
+
+
+
+##           Remove Edge Appx Packages
+#########################################################################
+
+# Get user's SID
+user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"]).decode().strip()
+
+# Variables
+system_id = "S-1-5-18"
+appx_eol = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife"
+
+# Remove Edge Appx Packages
+output = subprocess.check_output(['powershell', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'])
+edge_apps = output.decode().strip().split('\r\n')
+for app in edge_apps:
+    key_path_user = f"{appx_eol}\\{user_sid}\\{app}"
+    key_path_local = f"{appx_eol}\\{system_id}\\{app}"
+    try:
+        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_user)
+    except:
+        pass
+    try:
+        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_local)
+    except:
+        pass
+    subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app}'])
+    subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers'])
