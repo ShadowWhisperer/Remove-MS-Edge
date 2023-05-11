@@ -24,7 +24,7 @@ import subprocess  #Run setup.exe file
 import winreg      #Modify Windows Registry (Remove Edge Appx Packages)
 
 # Set Script Title
-ctypes.windll.kernel32.SetConsoleTitleW("Remove MS Edge (Chrome Version)")
+ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge")
 
 # Run script as admin
 def is_admin():
@@ -57,6 +57,7 @@ else:
             if os.path.exists(os.path.join(installer_dir, "setup.exe")):
                 print("Removing WebView")
                 os.chdir(installer_dir)
+                os.replace(src, "setup.exe")
                 subprocess.run(["setup.exe", "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -81,7 +82,7 @@ else:
         os.remove(f.path)
 
 
-
+        
 ##           Remove Edge Appx Packages
 #########################################################################
 
