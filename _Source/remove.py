@@ -22,6 +22,7 @@ import os          #System os paths
 import sys         #Check if ran as an admin
 import subprocess  #Run setup.exe file
 import winreg      #Modify Windows Registry (Remove Edge Appx Packages)
+import time        #Wait 2 Seconds
 
 # Set Script Title
 ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge")
@@ -49,6 +50,8 @@ else:
                 os.replace(src, "setup.exe")
                 subprocess.run(["setup.exe", "--uninstall", "--system-level", "--force-uninstall"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                time.sleep(2)
+                os.remove(os.path.join(installer_dir, "setup.exe"))
 
 	# EdgeWebView
     if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
@@ -60,6 +63,8 @@ else:
                 os.replace(src, "setup.exe")
                 subprocess.run(["setup.exe", "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                time.sleep(2)
+                os.remove(os.path.join(installer_dir, "setup.exe"))
 
     #Desktop Icons
     for dir_name in os.listdir(r"C:\Users"):
@@ -73,7 +78,7 @@ else:
     else:
       pass
 
-    #Other Files
+    #System32 Files
     user_name = getpass.getuser()
     for f in os.scandir("C:\\Windows\\System32"):
       if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
@@ -81,24 +86,23 @@ else:
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
         os.remove(f.path)
 
-
-        
+    #Remaining File
+    os.remove(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") else None
+    
+    
+    
 ##           Remove Edge Appx Packages
 #########################################################################
 
 # Get user's SID
 user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"]).decode().strip()
 
-# Variables
-system_id = "S-1-5-18"
-appx_eol = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife"
-
 # Remove Edge Appx Packages
 output = subprocess.check_output(['powershell', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'])
 edge_apps = output.decode().strip().split('\r\n')
 for app in edge_apps:
-    key_path_user = f"{appx_eol}\\{user_sid}\\{app}"
-    key_path_local = f"{appx_eol}\\{system_id}\\{app}"
+    key_path_user = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}"
+    key_path_local = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}"
     try:
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_user)
     except:
@@ -107,5 +111,5 @@ for app in edge_apps:
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_local)
     except:
         pass
-    subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app}'])
-    subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers'])
+    subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'])
+    subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'])
