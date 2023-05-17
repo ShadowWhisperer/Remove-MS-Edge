@@ -10,7 +10,7 @@ Use the .exe version, if this happens.
 Removal of Edge will cause update "KB5006670" to repeatedly fail/rollback.
 Install Edge, run Windows Updates, then remove Edge
 ```
-https://www.microsoft.com/en-us/edge
+https://www.microsoft.com/en-us/edge/download?form=MA13FJ
 
 <br>  
 
