@@ -26,9 +26,10 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 5/18/2023 - https://github.com/ShadowWhisperer") #Windows Title
-root.geometry("800x400")   #Windows Size (width x height)
+root.title("Bye Bye Edge - 5/23/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
+
 
 #Check if running as admin
 def is_admin():
@@ -73,6 +74,8 @@ def remove_edge():
         output_terminal.insert(END, " Not Found\n\n", "green")
         root.update()
 
+######################################################################################################################################
+
     #Edge Update  *Does not always work
     if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe"):
         command = [src, '--uninstall', '--msedgewebview', '--system-level', '--force-uninstall']
@@ -80,6 +83,10 @@ def remove_edge():
         time.sleep(3)
     else:
         pass
+
+    subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+######################################################################################################################################
 
     #Edge WebView
     if remove_webview:
@@ -98,30 +105,9 @@ def remove_edge():
             output_terminal.insert(END, " Not Found\n", "green")
         root.update()
 
-    # Program Files (x86)\Microsoft\Edge\Edge.dat
-    os.remove(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") if os.path.isfile(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") else None
+######################################################################################################################################
 
-    #Desktop Icons
-    for dir_name in os.listdir(r"C:\Users"):
-        for link in [os.path.join(r"C:\Users", dir_name, "Desktop", name) for name in ["edge.lnk", "Microsoft Edge.lnk"]]:
-            if os.path.exists(link):
-                os.remove(link)
-
-	#Start Menu Icon
-    if os.path.exists("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk"):
-      os.remove("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk")
-    else:
-      pass
-
-    #System32 Files
-    user_name = getpass.getuser()
-    for f in os.scandir("C:\\Windows\\System32"):
-      if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
-        subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
-        subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
-        os.remove(f.path)
-
-    #Remove Edge Appx Packages
+    #Edge Appx Packages
     output_terminal.insert(END, "\nRemoving Appx Packages\n")
     root.update()
     user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
@@ -138,12 +124,95 @@ def remove_edge():
             output_terminal.insert(END, f" {app}\n")
             root.update()
     else:
-        output_terminal.insert(END, " None Found\n", "green")
+      pass
+######################################################################################################################################
+
+    output_terminal.insert(END, "\nRemoving Other\n")
+    root.update()
+
+    #Startup - Active Setup
+    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    #Startup Files *Wildcard
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_ALL_ACCESS)
+        subkeys = [winreg.EnumValue(key, i)[0] for i in range(winreg.QueryInfoKey(key)[1]) if winreg.EnumValue(key, i)[0].startswith("MicrosoftEdge")]
+        for subkey_name in subkeys:
+            output_terminal.insert(END, f" Key: {subkey_name}\n")
+            root.update()
+            winreg.DeleteValue(key, subkey_name)
+    except Exception:
+        pass
+
+    #Tasks - Name
+    result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    tasks = result.stdout.strip().split('\n')[1:]
+    microsoft_edge_tasks = [task.split(',')[0].strip('"') for task in tasks if 'MicrosoftEdge' in task]
+    with open(os.devnull, 'w') as devnull:
+        for task in microsoft_edge_tasks:
+            output_terminal.insert(END, f" Task: {task}\n")
+            root.update()
+            subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull)
+
+    #Tasks - Files
+    for tsks, dirs, files in os.walk(r"C:\Windows\System32\Tasks"):
+       [os.remove(os.path.join(tasks, file)) for file in files if file.startswith("MicrosoftEdge")]
+
+    #Edge Update Services
+    service_names = ["edgeupdate", "edgeupdatem"]
+    for name in service_names:
+        if subprocess.run(['sc', 'delete', name], capture_output=True, text=True).returncode == 0:
+            output_terminal.insert(END, f" Service: {name}\n")
+            root.update()
+    subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    #Edge Update - Remaining
+    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    #Program Files (x86)\Microsoft\Edge\Edge.dat
+    os.remove(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") if os.path.isfile(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") else None
+
+    #Desktop Icons
+    for dir_name in os.listdir(r"C:\Users"):
+        for link in [os.path.join(r"C:\Users", dir_name, "Desktop", name) for name in ["edge.lnk", "Microsoft Edge.lnk"]]:
+            if os.path.exists(link):
+                os.remove(link)
+
+	#Start Menu Icon
+    if os.path.exists("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk"):
+      os.remove("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk")
+      output_terminal.insert(END, " File: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk\n")
+      root.update()
+    else:
+      pass
+
+    #System32 Files
+    user_name = getpass.getuser()
+    for f in os.scandir("C:\\Windows\\System32"):
+      if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
+        subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
+        subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
+        output_terminal.insert(END, f" File: {f.path}\n")
         root.update()
+        os.remove(f.path)
 
+    #Remaining Edge Keys - HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge
+    if not os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
+        subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)                
+
+    #Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
+    for directory, dirs, files in os.walk(r"C:\Windows\SystemApps"):
+        for folder in dirs:
+            if folder.startswith("Microsoft.MicrosoftEdge"):
+                folder_path = os.path.join(directory, folder)
+                output_terminal.insert(END, f" Folder: {folder_path}\n")
+                root.update()
+                subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
     output_terminal.insert(END, "\n\nFinished!\n", "green",)
-
-
+#####################################################################################################################################
+            
 #Exit Button
 def exit_program():
     sys.exit()
@@ -166,7 +235,7 @@ remove_button.pack(pady=2)
 exit_button = Button(root, text="Exit", command=exit_program)
 exit_button.pack(pady=2)
 
-output_terminal = ScrolledText(root, width=800, height=20) #Terminal Size
+output_terminal = ScrolledText(root, width=800, height=30) #Terminal Size
 output_terminal.pack(pady=5)
 
 root.mainloop()
