@@ -152,19 +152,19 @@ def remove_edge():
     except Exception:
         pass
 
-    #Tasks - Name
-    result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    # Tasks - Name
+    result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, startupinfo=hide_console())
     tasks = result.stdout.strip().split('\n')[1:]
     microsoft_edge_tasks = [task.split(',')[0].strip('"') for task in tasks if 'MicrosoftEdge' in task]
     with open(os.devnull, 'w') as devnull:
         for task in microsoft_edge_tasks:
             output_terminal.insert(END, f" Task: {task}\n")
             root.update()
-            subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull)
+            subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull, startupinfo=hide_console())
 
-    #Tasks - Files
+    # Tasks - Files
     for tsks, dirs, files in os.walk(r"C:\Windows\System32\Tasks"):
-       [os.remove(os.path.join(tasks, file)) for file in files if file.startswith("MicrosoftEdge")]
+        [os.remove(os.path.join(tasks, file)) for file in files if file.startswith("MicrosoftEdge")]
 
     #Edge Update Services
     service_names = ["edgeupdate", "edgeupdatem"]
