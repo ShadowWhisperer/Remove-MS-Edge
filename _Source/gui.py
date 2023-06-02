@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #
 # Check if ran with admin permissions
 #  Get Admin permissions
@@ -18,7 +20,7 @@ import ctypes         #Check if ran as an admin / Window title
 import getpass        #Take Permissions
 import os             #System os paths
 import sys            #Check if ran as an admin
-import subprocess     #Run setup.exe file
+import subprocess     #Run subprocesses
 import time           #Wait 2 Seconds
 import winreg         #Modify Windows Registry (Remove Edge Appx Packages)
 from tkinter import * #GUI
@@ -26,7 +28,7 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 5/23/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 6/1/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
@@ -41,6 +43,12 @@ if not is_admin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
     os._exit(0)
 
+#Hide CMD/Powershell
+def hide_console():
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.dwFlags |= subprocess.CREATE_NO_WINDOW
+    return startupinfo
 
 def remove_edge():
     output_terminal.delete("1.0", END) #Clear Terminal
@@ -131,7 +139,7 @@ def remove_edge():
     root.update()
 
     #Startup - Active Setup
-    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console())
 
     #Startup Files *Wildcard
     try:
@@ -161,14 +169,14 @@ def remove_edge():
     #Edge Update Services
     service_names = ["edgeupdate", "edgeupdatem"]
     for name in service_names:
-        if subprocess.run(['sc', 'delete', name], capture_output=True, text=True).returncode == 0:
+        if subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console()).returncode == 0:
             output_terminal.insert(END, f" Service: {name}\n")
             root.update()
-    subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], startupinfo=hide_console())
+    subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], startupinfo=hide_console())
 
     #Edge Update - Remaining
-    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], startupinfo=hide_console())
     
     #Program Files (x86)\Microsoft\Edge\Edge.dat
     os.remove(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") if os.path.isfile(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") else None
@@ -199,7 +207,7 @@ def remove_edge():
 
     #Remaining Edge Keys - HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge
     if not os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
-        subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)                
+        subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], stdout=subprocess.DEVNULL, startupinfo=hide_console())
 
     #Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
     for directory, dirs, files in os.walk(r"C:\Windows\SystemApps"):
@@ -208,7 +216,7 @@ def remove_edge():
                 folder_path = os.path.join(directory, folder)
                 output_terminal.insert(END, f" Folder: {folder_path}\n")
                 root.update()
-                subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), startupinfo=hide_console(), shell=True)
     
     output_terminal.insert(END, "\n\nFinished!\n", "green",)
 #####################################################################################################################################
@@ -217,12 +225,6 @@ def remove_edge():
 def exit_program():
     sys.exit()
 
-#Don't show PowerShell window
-def hide_console():
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
-    return startupinfo
 
 webview_var = BooleanVar()
 webview_var.set(True)
