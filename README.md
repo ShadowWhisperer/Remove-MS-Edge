@@ -4,6 +4,14 @@
 ! WARNING
 Removal of Edge will cause update "KB5006670" (2021) to repeatedly fail/rollback.
 Install Edge, run Windows Updates, then remove Edge
+
+****************************************************************************************
+
+Remove-Edge.exe  Remove-EdgeOnly.exe flags
+
+/s  Silent      Do not print anything, or change title of window
+/e  Edge Only   Do not remove WebView
+
 ```
 
 [Remove-Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.bat) Some versions of Edge will not work with this. (Not updated) *Chrome version only  
