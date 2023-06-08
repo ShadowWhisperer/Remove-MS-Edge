@@ -8,56 +8,84 @@
 # Check if EdgeWebView directory exists
 #  Run the uninstall file
 #
+# Remove Edge Appx packages
 # Delete desktop icons
 # Delete start menu icons
-# Delete other files
-# Remove Edge Appx packages
+# Delete startup files
+# Delete tasks
+# Delete services
+# Delete other files / folders
 #
 
 import ctypes      # Check if ran as an admin / Window title
 import getpass     # Take Permissions
 import os          # System OS paths
-import sys         # Check if ran as an admin
+import sys         # Check if ran as an admin / silent flag
 import subprocess  # Run setup.exe file
 import winreg      # Modify Windows Registry (Remove Edge Appx Packages)
 import time        # Wait 2 seconds
 
-# Set Script Title
-ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge")
-
 # Check if running as admin
-def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
-        return False
-if not is_admin():
+if not ctypes.windll.shell32.IsUserAnAdmin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
     os._exit(0)
 
+
+# Flags
+#   /s = silent (no printing)
+#   /e = edge only
+silent_mode = False
+edge_only_mode = False
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == '/s':
+        silent_mode = True
+    elif sys.argv[1] == '/e':
+        edge_only_mode = True
+    elif sys.argv[1] == '/?':
+        print("Usage:")
+        print(" /s   Silent")
+        print(" /e   Edge only")
+        print("\n")
+        sys.exit()
+else:
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 6/8/2023 - https://github.com/ShadowWhisperer")
+
+
+#Hide CMD/Powershell
+def hide_console():
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.dwFlags |= subprocess.CREATE_NO_WINDOW
+    return startupinfo
+
+#Setup.exe location
 src = os.path.join(sys._MEIPASS, "setup.exe")
 
 ################################################################################################################################################
 
 #Edge
 if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application"):
-    print("Removing Microsoft Edge")
+    if not silent_mode:
+        print("Removing Microsoft Edge")
     cmd = [src, "--uninstall", "--system-level", "--force-uninstall"]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     time.sleep(2)
 
 #EdgeWebView
-if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
-    print("Removing WebView")
-    cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    time.sleep(2)
+if not edge_only_mode:
+    if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
+        if not silent_mode:
+            print("Removing WebView")
+        cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        time.sleep(2)
 
 ################################################################################################################################################
 
 #Remove Edge Appx Packages
-user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"]).decode().strip()
-output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'])
+user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
+output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
 edge_apps = output.decode().strip().split('\r\n')
 if output:
     for app in edge_apps:
@@ -65,8 +93,8 @@ if output:
         key_path_local = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}"
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_user)
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_local)
-        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'])
-        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'])
+        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
+        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
 else:
     pass
 
@@ -76,7 +104,7 @@ else:
 subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 #Startup - Active Setup
-subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
 #Desktop Icons
 for dir_name in os.listdir(r"C:\Users"):
@@ -89,12 +117,12 @@ if os.path.exists(r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Microso
     os.remove(r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk")
 
 #Tasks - Name
-result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, startupinfo=hide_console())
 tasks = result.stdout.strip().split('\n')[1:]
 microsoft_edge_tasks = [task.split(',')[0].strip('"') for task in tasks if 'MicrosoftEdge' in task]
 with open(os.devnull, 'w') as devnull:
     for task in microsoft_edge_tasks:
-        subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull)
+        subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull, startupinfo=hide_console())
 
 #Tasks - Files
 for tsks, dirs, files in os.walk(r"C:\Windows\System32\Tasks"):
@@ -103,23 +131,24 @@ for tsks, dirs, files in os.walk(r"C:\Windows\System32\Tasks"):
 #Edge Update Services
 service_names = ["edgeupdate", "edgeupdatem"]
 for name in service_names:
-    subprocess.run(['sc', 'delete', name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console()).returncode == 0:
+        subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-#Edge Update - Remaining
-subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# Edge Update - Remaining
+subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-#Remaining Edge Keys - HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge
+# Remaining Edge Keys - HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge
 if not os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
-    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  
+    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 #Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
 for directory, dirs, files in os.walk(r"C:\Windows\SystemApps"):
     for folder in dirs:
         if folder.startswith("Microsoft.MicrosoftEdge"):
             folder_path = os.path.join(directory, folder)
-            subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            with open(os.devnull, "w") as devnull:
+                subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), startupinfo=hide_console(), shell=True, stdout=devnull, stderr=devnull)
 
 #System32 Files
 user_name = getpass.getuser()
