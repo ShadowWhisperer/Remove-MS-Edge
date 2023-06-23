@@ -1,4 +1,4 @@
-<a href="https://www.buymeacoffee.com/wic8pmtmys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Piza" height="32" width="100"></a>
+<a href="https://www.buymeacoffee.com/wic8pmtmys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Piza" height="36" width="120"></a>
 
 
 **Microsoft Edge / Edge WebView uninstallers**
@@ -16,6 +16,8 @@ Remove-Edge.exe  Remove-EdgeOnly.exe flags
 /e  Edge Only   Do not remove WebView
 
 ```
+
+<br>
 
 [Remove-Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.bat) Some versions of Edge will not work with this. (Not updated) *Chrome version only  
 
