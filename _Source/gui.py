@@ -28,20 +28,20 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 6/1/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 7/6/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
 
 #Check if running as admin
-def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
-        return False
-if not is_admin():
+if not ctypes.windll.shell32.IsUserAnAdmin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
     os._exit(0)
+
+#SIDs of all users
+output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
+lines = output.decode('utf-8').split('\n')
+all_users = [line.split()[1] for line in lines[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
 
 #Hide CMD/Powershell
 def hide_console():
@@ -123,10 +123,12 @@ def remove_edge():
     edge_apps = output.decode().strip().split('\r\n')
     if output:
         for app in edge_apps:
-            key_path_user = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}"
-            key_path_local = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}"
-            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_user)
-            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_local)
+            #All user SIDs
+            for sid in all_users:
+                winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{sid}\\{app}")
+            #Create end of life / Deprovisioned keys
+            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
+            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
             subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
             subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
             output_terminal.insert(END, f" {app}\n")

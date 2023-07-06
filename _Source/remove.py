@@ -49,7 +49,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 6/8/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/6/2023 - https://github.com/ShadowWhisperer")
 
 
 #Hide CMD/Powershell
@@ -61,6 +61,10 @@ def hide_console():
 
 #Setup.exe location
 src = os.path.join(sys._MEIPASS, "setup.exe")
+#SIDs of all users
+output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
+lines = output.decode('utf-8').split('\n')
+all_users = [line.split()[1] for line in lines[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
 
 ################################################################################################################################################
 
@@ -84,15 +88,16 @@ if not edge_only_mode:
 ################################################################################################################################################
 
 #Remove Edge Appx Packages
-user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
 output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
 edge_apps = output.decode().strip().split('\r\n')
 if output:
     for app in edge_apps:
-        key_path_user = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}"
-        key_path_local = f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}"
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_user)
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path_local)
+        #All user SIDs
+        for sid in all_users:
+            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{sid}\\{app}")
+        #Create end of life / Deprovisioned keys
+        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
+        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
 else:
