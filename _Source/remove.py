@@ -63,7 +63,7 @@ def hide_console():
 src = os.path.join(sys._MEIPASS, "setup.exe")
 #SIDs of all users
 output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
-lines = output.decode('utf-8').split('\n')
+lines = output.decode('ascii').split('\n')
 all_users = [line.split()[1] for line in lines[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
 
 ################################################################################################################################################
@@ -89,8 +89,8 @@ if not edge_only_mode:
 
 #Remove Edge Appx Packages
 output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-edge_apps = output.decode().strip().split('\r\n')
-if output:
+edge_apps = '' if output.decode().strip().split('\r\n') == [''] else output.decode().strip().split('\r\n')
+if edge_apps:
     for app in edge_apps:
         #All user SIDs
         for sid in all_users:
