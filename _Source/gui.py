@@ -16,6 +16,11 @@
 # Remove Edge Appx packages
 #
 
+#
+# pip install chardet
+#
+
+
 import ctypes         #Check if ran as an admin / Window title
 import getpass        #Take Permissions
 import os             #System os paths
@@ -23,15 +28,15 @@ import sys            #Check if ran as an admin
 import subprocess     #Run subprocesses
 import time           #Wait 2 Seconds
 import winreg         #Modify Windows Registry (Remove Edge Appx Packages)
+import chardet        #Check text encoding - SSIDs of all users
 from tkinter import * #GUI
 from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 7/6/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 7/10/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
-
 
 #Check if running as admin
 if not ctypes.windll.shell32.IsUserAnAdmin():
@@ -40,8 +45,9 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
 
 #SIDs of all users
 output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
-lines = output.decode('utf-8').split('\n')
-all_users = [line.split()[1] for line in lines[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
+encoding = chardet.detect(output)['encoding']
+decoded_output = output.decode(encoding)
+all_users = [line.split()[1] for line in decoded_output.splitlines()[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
 
 #Hide CMD/Powershell
 def hide_console():
@@ -118,10 +124,9 @@ def remove_edge():
     #Edge Appx Packages
     output_terminal.insert(END, "\nRemoving Appx Packages\n")
     root.update()
-    user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
     output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-    edge_apps = output.decode().strip().split('\r\n')
-    if output:
+    edge_apps = '' if output.decode().strip().split('\r\n') == [''] else output.decode().strip().split('\r\n')
+    if edge_apps:
         for app in edge_apps:
             #All user SIDs
             for sid in all_users:
