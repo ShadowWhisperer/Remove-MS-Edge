@@ -23,6 +23,7 @@ import os          # System OS paths
 import sys         # Check if ran as an admin / silent flag
 import subprocess  # Run setup.exe file
 import winreg      # Modify Windows Registry (Remove Edge Appx Packages)
+import chardet     #Check text encoding - SIDs of all users
 import time        # Wait 2 seconds
 
 # Check if running as admin
@@ -49,7 +50,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/6/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/12/2023 - https://github.com/ShadowWhisperer")
 
 
 #Hide CMD/Powershell
@@ -61,10 +62,12 @@ def hide_console():
 
 #Setup.exe location
 src = os.path.join(sys._MEIPASS, "setup.exe")
+
 #SIDs of all users
 output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
-lines = output.decode('ascii').split('\n')
-all_users = [line.split()[1] for line in lines[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
+encoding = chardet.detect(output)['encoding']
+decoded_output = output.decode(encoding)
+all_users = [line.split()[1] for line in decoded_output.splitlines()[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
 
 ################################################################################################################################################
 
