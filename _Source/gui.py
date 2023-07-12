@@ -16,11 +16,6 @@
 # Remove Edge Appx packages
 #
 
-#
-# pip install chardet
-#
-
-
 import ctypes         #Check if ran as an admin / Window title
 import getpass        #Take Permissions
 import os             #System os paths
@@ -28,13 +23,13 @@ import sys            #Check if ran as an admin
 import subprocess     #Run subprocesses
 import time           #Wait 2 Seconds
 import winreg         #Modify Windows Registry (Remove Edge Appx Packages)
-import chardet        #Check text encoding - SSIDs of all users
+import chardet        #Check text encoding - SIDs of all users
 from tkinter import * #GUI
 from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 7/10/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 7/12/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
@@ -121,6 +116,8 @@ def remove_edge():
 
 ######################################################################################################################################
 
+
+
     #Edge Appx Packages
     output_terminal.insert(END, "\nRemoving Appx Packages\n")
     root.update()
@@ -131,6 +128,7 @@ def remove_edge():
             #All user SIDs
             for sid in all_users:
                 winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{sid}\\{app}")
+            
             #Create end of life / Deprovisioned keys
             winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
             winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
@@ -144,7 +142,6 @@ def remove_edge():
 
     output_terminal.insert(END, "\nRemoving Other\n")
     root.update()
-
     #Startup - Active Setup
     subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console())
 
