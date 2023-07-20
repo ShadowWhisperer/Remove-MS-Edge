@@ -38,18 +38,19 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
     os._exit(0)
 
-#SIDs of all users
-output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
-encoding = chardet.detect(output)['encoding']
-decoded_output = output.decode(encoding)
-all_users = [line.split()[1] for line in decoded_output.splitlines()[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
-
 #Hide CMD/Powershell
 def hide_console():
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     startupinfo.dwFlags |= subprocess.CREATE_NO_WINDOW
     return startupinfo
+
+
+#SIDs of all users
+output = subprocess.check_output(['powershell', '-Command', 'Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") } | Select-Object -Property Name, SID'], startupinfo=hide_console())
+encoding = chardet.detect(output)['encoding']
+decoded_output = output.decode(encoding)
+all_users = [line.split()[1] for line in decoded_output.splitlines()[2:] if line.strip()]
 
 def remove_edge():
     output_terminal.delete("1.0", END) #Clear Terminal
