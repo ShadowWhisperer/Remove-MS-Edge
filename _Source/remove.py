@@ -50,7 +50,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/12/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/20/2023 - https://github.com/ShadowWhisperer")
 
 
 #Hide CMD/Powershell
@@ -64,10 +64,10 @@ def hide_console():
 src = os.path.join(sys._MEIPASS, "setup.exe")
 
 #SIDs of all users
-output = subprocess.check_output(['wmic', 'useraccount', 'get', 'name,sid'])
+output = subprocess.check_output(['powershell', '-Command', 'Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") } | Select-Object -Property Name, SID'], startupinfo=hide_console())
 encoding = chardet.detect(output)['encoding']
 decoded_output = output.decode(encoding)
-all_users = [line.split()[1] for line in decoded_output.splitlines()[1:] if line.strip() and line.split()[0] not in ['Administrator', 'DefaultAccount', 'Guest', 'WDAGUtilityAccount']]
+all_users = [line.split()[1] for line in decoded_output.splitlines()[2:] if line.strip()]
 
 ################################################################################################################################################
 
