@@ -23,7 +23,6 @@ import os          # System OS paths
 import sys         # Check if ran as an admin / silent flag
 import subprocess  # Run setup.exe file
 import winreg      # Modify Windows Registry (Remove Edge Appx Packages)
-import chardet     #Check text encoding - SIDs of all users
 import time        # Wait 2 seconds
 
 # Check if running as admin
@@ -64,10 +63,8 @@ def hide_console():
 src = os.path.join(sys._MEIPASS, "setup.exe")
 
 #SIDs of all users
-output = subprocess.check_output(['powershell', '-Command', 'Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") } | Select-Object -Property Name, SID'], startupinfo=hide_console())
-encoding = chardet.detect(output)['encoding']
-decoded_output = output.decode(encoding)
-all_users = [line.split()[1] for line in decoded_output.splitlines()[2:] if line.strip()]
+output = subprocess.check_output(['powershell', '-Command', '(Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") }).SID'], startupinfo=hide_console())
+all_users = output.decode().strip()
 
 ################################################################################################################################################
 
