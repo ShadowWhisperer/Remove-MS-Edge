@@ -23,7 +23,6 @@ import sys            #Check if ran as an admin
 import subprocess     #Run subprocesses
 import time           #Wait 2 Seconds
 import winreg         #Modify Windows Registry (Remove Edge Appx Packages)
-import chardet        #Check text encoding - SIDs of all users
 from tkinter import * #GUI
 from tkinter.scrolledtext import ScrolledText
 
@@ -45,12 +44,9 @@ def hide_console():
     startupinfo.dwFlags |= subprocess.CREATE_NO_WINDOW
     return startupinfo
 
-
 #SIDs of all users
-output = subprocess.check_output(['powershell', '-Command', 'Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") } | Select-Object -Property Name, SID'], startupinfo=hide_console())
-encoding = chardet.detect(output)['encoding']
-decoded_output = output.decode(encoding)
-all_users = [line.split()[1] for line in decoded_output.splitlines()[2:] if line.strip()]
+output = subprocess.check_output(['powershell', '-Command', '(Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") }).SID'], startupinfo=hide_console())
+all_users = output.decode().strip()
 
 def remove_edge():
     output_terminal.delete("1.0", END) #Clear Terminal
