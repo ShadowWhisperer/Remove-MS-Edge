@@ -5,9 +5,6 @@
 # Check if Edge (Chrome) is installed - C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe
 #  Run the uninstall file
 #
-# Check if EdgeWebView directory exists
-#  Run the uninstall file
-#
 # Remove Edge Appx packages
 # Delete desktop icons
 # Delete start menu icons
@@ -45,11 +42,10 @@ if len(sys.argv) > 1:
     elif sys.argv[1] == '/?':
         print("Usage:")
         print(" /s   Silent")
-        print(" /e   Edge only")
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/20/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/28/2023 - https://github.com/ShadowWhisperer")
 
 
 #Hide CMD/Powershell
@@ -62,10 +58,6 @@ def hide_console():
 #Setup.exe location
 src = os.path.join(sys._MEIPASS, "setup.exe")
 
-#SIDs of all users
-output = subprocess.check_output(['powershell', '-Command', '(Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") }).SID'], startupinfo=hide_console())
-all_users = output.decode().strip()
-
 ################################################################################################################################################
 
 #Edge
@@ -76,32 +68,23 @@ if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application"):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     time.sleep(2)
 
-#EdgeWebView
-if not edge_only_mode:
-    if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
-        if not silent_mode:
-            print("Removing WebView")
-        cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        time.sleep(2)
-
 ################################################################################################################################################
 
+
 #Remove Edge Appx Packages
+user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
 output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-edge_apps = '' if output.decode().strip().split('\r\n') == [''] else output.decode().strip().split('\r\n')
-if edge_apps:
+edge_apps = output.decode().strip().split('\r\n')
+if output:
     for app in edge_apps:
-        #All user SIDs
-        for sid in all_users:
-            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{sid}\\{app}")
-        #Create end of life / Deprovisioned keys
+        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}")
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
 else:
     pass
+
 
 ################################################################################################################################################
 
