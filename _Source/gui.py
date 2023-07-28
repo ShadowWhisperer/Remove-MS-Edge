@@ -28,7 +28,7 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 7/12/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 7/28/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
@@ -43,10 +43,6 @@ def hide_console():
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     startupinfo.dwFlags |= subprocess.CREATE_NO_WINDOW
     return startupinfo
-
-#SIDs of all users
-output = subprocess.check_output(['powershell', '-Command', '(Get-WmiObject Win32_UserAccount | Where-Object { $_.Name -notin @("Administrator", "DefaultAccount", "Guest", "WDAGUtilityAccount") }).SID'], startupinfo=hide_console())
-all_users = output.decode().strip()
 
 def remove_edge():
     output_terminal.delete("1.0", END) #Clear Terminal
@@ -113,20 +109,15 @@ def remove_edge():
 
 ######################################################################################################################################
 
-
-
     #Edge Appx Packages
     output_terminal.insert(END, "\nRemoving Appx Packages\n")
     root.update()
+    user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
     output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-    edge_apps = '' if output.decode().strip().split('\r\n') == [''] else output.decode().strip().split('\r\n')
-    if edge_apps:
+    edge_apps = output.decode().strip().split('\r\n')
+    if output:
         for app in edge_apps:
-            #All user SIDs
-            for sid in all_users:
-                winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{sid}\\{app}")
-            
-            #Create end of life / Deprovisioned keys
+            winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}")
             winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
             winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
             subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
@@ -134,7 +125,8 @@ def remove_edge():
             output_terminal.insert(END, f" {app}\n")
             root.update()
     else:
-      pass
+        pass
+
 ######################################################################################################################################
 
     output_terminal.insert(END, "\nRemoving Other\n")
