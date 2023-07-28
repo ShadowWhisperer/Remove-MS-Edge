@@ -30,7 +30,6 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
 
 # Flags
 #   /s = silent (no printing)
-#   /e = edge only
 silent_mode = False
 edge_only_mode = False
 
@@ -68,8 +67,21 @@ if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application"):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     time.sleep(2)
 
-################################################################################################################################################
+#EdgeWebView
+if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
+if not edge_only_mode:
+    print("Removing WebView")
+    if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
+    cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+        if not silent_mode:
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            print("Removing WebView")
+    time.sleep(2)
+        cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        time.sleep(2)
 
+################################################################################################################################################
 
 #Remove Edge Appx Packages
 user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
