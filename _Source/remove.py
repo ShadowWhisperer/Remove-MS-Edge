@@ -46,7 +46,6 @@ if len(sys.argv) > 1:
 else:
     ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/11/2023 - https://github.com/ShadowWhisperer")
 
-
 #Hide CMD/Powershell
 def hide_console():
     startupinfo = subprocess.STARTUPINFO()
@@ -76,8 +75,17 @@ if not edge_only_mode:
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         time.sleep(2)
 
-################################################################################################################################################
+#Edge Update  *Does not always work
+if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe"):
+    if not silent_mode:
+        print("Removing Edge Update")
+    cmd = [src, '--uninstall', '--msedgewebview', '--system-level', '--force-uninstall']
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    time.sleep(3)
+else:
+    pass
 
+################################################################################################################################################
 
 #Remove Edge Appx Packages
 user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
@@ -93,9 +101,10 @@ if output:
 else:
     pass
 
-
 ################################################################################################################################################
 
+#Edge Update - Leftovers
+subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 #Startup - Active Setup
 subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -158,5 +167,4 @@ if os.path.exists(edge_dat_path):
     os.remove(edge_dat_path)
 
 #Left over folders
-subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 subprocess.run('rmdir /q /s "C:\\Program Files (x86)\\Microsoft\\Temp"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
