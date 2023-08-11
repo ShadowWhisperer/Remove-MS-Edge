@@ -44,7 +44,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 7/28/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/11/2023 - https://github.com/ShadowWhisperer")
 
 
 #Hide CMD/Powershell
@@ -96,8 +96,6 @@ else:
 
 ################################################################################################################################################
 
-#Edge Update - Leftovers
-subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 #Startup - Active Setup
 subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -158,3 +156,7 @@ for f in os.scandir("C:\\Windows\\System32"):
 edge_dat_path = r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat"
 if os.path.exists(edge_dat_path):
     os.remove(edge_dat_path)
+
+#Left over folders
+subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.run('rmdir /q /s "C:\\Program Files (x86)\\Microsoft\\Temp"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
