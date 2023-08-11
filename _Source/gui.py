@@ -28,7 +28,7 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 7/28/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 8/11/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
@@ -210,7 +210,10 @@ def remove_edge():
                 output_terminal.insert(END, f" Folder: {folder_path}\n")
                 root.update()
                 subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), startupinfo=hide_console(), shell=True)
-    
+
+    #Delete extra folders
+    subprocess.run('rmdir /q /s "C:\\Program Files (x86)\\Microsoft\\Temp"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     output_terminal.insert(END, "\n\nFinished!\n", "green",)
 #####################################################################################################################################
             
