@@ -27,6 +27,8 @@ Remove-Edge.exe  Remove-EdgeOnly.exe flags
 
 [Remove-Edge_GUI.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge_GUI.exe) Full uninstaller with interface (option to omit WebView)  
 
+[NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/NoTerm.exe) Remove Edge only. Completely silent, no terminal, no flags. Useful for Task Schedular.
+
 <br>
 
 [_Source](https://github.com/ShadowWhisperer/Remove-MS-Edge/tree/main/_Source) contains the python script used in the executable file. [Setup.exe](https://www.virustotal.com/gui/file/4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e) was pulled from an Edge install.  
