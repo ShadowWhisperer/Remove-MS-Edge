@@ -19,8 +19,6 @@ Remove-Edge.exe  Remove-EdgeOnly.exe flags
 
 <br>
 
-[Remove-Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.bat) Some versions of Edge will not work with this. (Not updated) *Chrome version only  
-
 [Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe) Full uninstaller  
 
 [Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe) Does not remove WebView.  
