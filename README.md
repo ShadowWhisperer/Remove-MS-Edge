@@ -4,10 +4,10 @@
 **Microsoft Edge / Edge WebView uninstallers**
 
 ```diff
-! WARNING
-Removal of Edge will cause update "KB5006670" (2021) to repeatedly fail/rollback.
-Install Edge, run Windows Updates, then remove Edge
+! Note
 
+Click on the .exe file above, then click on the download arrow on the far right.
+Do not right click, and save as, from directly above. It does not work from there.
 ****************************************************************************************
 
 Remove-Edge.exe  Remove-EdgeOnly.exe flags
