@@ -28,7 +28,7 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 8/11/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 10/16/2023 - https://github.com/ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
@@ -80,7 +80,7 @@ def remove_edge():
 
     #Edge Update  *Does not always work
     if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe"):
-        command = [src, '--uninstall', '--msedgewebview', '--system-level', '--force-uninstall']
+        command = [src, '--uninstall', '--system-level', '--force-uninstall']
         subprocess.run(command, shell=True)
         time.sleep(3)
     else:
