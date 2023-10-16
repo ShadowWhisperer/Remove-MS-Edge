@@ -44,7 +44,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/11/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 10/16/2023 - https://github.com/ShadowWhisperer")
 
 #Hide CMD/Powershell
 def hide_console():
@@ -79,7 +79,7 @@ if not edge_only_mode:
 if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe"):
     if not silent_mode:
         print("Removing Edge Update")
-    cmd = [src, '--uninstall', '--msedgewebview', '--system-level', '--force-uninstall']
+    cmd = [src, '--uninstall', '--system-level', '--force-uninstall']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     time.sleep(3)
 else:
