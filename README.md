@@ -5,9 +5,9 @@
 
 ```diff
 ! Note
-
-Click on the .exe file above, then click on the download arrow on the far right.
-Do not right click, and save as, from directly above. It does not work from there.
+Downlaod from the links below, or Click on the .exe from the lsit above, then click on the
+download arrow on the far right.
+- Do not right click and save as, from directly above. It does not work from there.
 ****************************************************************************************
 
 Remove-Edge.exe  Remove-EdgeOnly.exe flags
@@ -19,13 +19,13 @@ Remove-Edge.exe  Remove-EdgeOnly.exe flags
 
 <br>
 
-[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe) Full uninstaller  
+[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Full uninstaller  
 
-[Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe) Does not remove WebView.  
+[Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe?raw=true) Does not remove WebView.  
 
-[Remove-Edge_GUI.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge_GUI.exe) Full uninstaller with interface (option to omit WebView)  
+[Remove-Edge_GUI.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge_GUI.exe?raw=true) Full uninstaller with interface (option to omit WebView)  
 
-[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe) Remove Edge only. Completely silent, no terminal, no flags. Useful for Task Schedular.
+[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove Edge only. Completely silent, no terminal, no flags. Useful for Task Schedular.
 
 <br>
 
