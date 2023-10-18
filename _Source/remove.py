@@ -75,16 +75,6 @@ if not edge_only_mode:
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         time.sleep(2)
 
-#Edge Update  *Does not always work
-if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe"):
-    if not silent_mode:
-        print("Removing Edge Update")
-    cmd = [src, '--uninstall', '--system-level', '--force-uninstall']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    time.sleep(3)
-else:
-    pass
-
 ################################################################################################################################################
 
 #Remove Edge Appx Packages
