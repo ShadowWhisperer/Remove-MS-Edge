@@ -25,3 +25,5 @@ Re-Install Edge: [Small DL](https://www.microsoft.com/en-us/edge/download?form=M
 
 
 <img src="https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/Screenshot_GUI.PNG"/>
+
+[Alternative method:](https://rentry.co/uninstall_edge)
