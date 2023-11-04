@@ -3,7 +3,8 @@
 
 **Microsoft Edge / Edge WebView uninstallers**
 ```diff
-- Do not right click and save as, from directly above. It does not work from there.
+- Removing Edge causes update "KB5031445" (optional October 2023 update) to repeatedly fail.
+  Install Edge, install this update, then remove Edge. 
 
 Remove-Edge.exe  Remove-EdgeOnly.exe flags
 
