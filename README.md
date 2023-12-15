@@ -12,11 +12,9 @@ Remove-Edge.exe  Remove-EdgeOnly.exe flags
 /e  Edge Only   Do not remove WebView
 ```
 
-[Remove-Appx.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Appx.exe?raw=true) Built-in edge only, not the Chrome based one  
+[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes both edge, and WebView.
 
-[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes all Edges, and WebView.
-
-[Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe?raw=true) Removes all Edges, does not remove WebView.  
+[Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe?raw=true) Removes edge, does not remove WebView.  
 
 [Remove-Edge_GUI.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge_GUI.exe?raw=true) Full uninstaller with interface (option to omit WebView)  
 
