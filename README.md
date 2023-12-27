@@ -6,7 +6,7 @@
 - Removing Edge may cause update failure loop. 
   Install Edge, install this update, then remove Edge. 
 
-- Un-ininstall WebView2 before running this, then install it again; if needed
+- Uninstall WebView2 before running this, then install it again; if needed
  If Edge is installed - WebView2 installs to 'C:\Program Files (x86)\Microsoft\Edge'
  If Edge is not installed - WebView2 installs to 'C:\Program Files (x86)\Microsoft\EdgeWebView'
 
