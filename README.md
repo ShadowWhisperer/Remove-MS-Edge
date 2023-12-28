@@ -23,7 +23,9 @@ Remove-Edge.exe  Remove-EdgeOnly.exe flags
 
 [Remove-Edge_GUI.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge_GUI.exe?raw=true) Full uninstaller with interface (option to omit WebView)  
 
-[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove all Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.
+[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove all Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
+
+[Edge-Appx.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge-Appx.bat?raw=true) Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
 
 <br>
 
