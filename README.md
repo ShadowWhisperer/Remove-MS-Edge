@@ -10,6 +10,8 @@
  If Edge is installed - WebView2 installs to 'C:\Program Files (x86)\Microsoft\Edge'
  If Edge is not installed - WebView2 installs to 'C:\Program Files (x86)\Microsoft\EdgeWebView'
 
+- Some reports of Windows Defender blocking this. Disable Defender first.
+
 
 Remove-Edge.exe  Remove-EdgeOnly.exe flags
 
