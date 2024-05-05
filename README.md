@@ -9,7 +9,7 @@
 - .exe versions have been moved to the Retired folder, due to too many complaints of false positives  
 ```
 
-[Both.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Bath.bat?raw=true) Removes both Edge, and WebView.
+[Both.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Both.bat?raw=true) Removes both Edge, and WebView.
 
 [Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge.bat?raw=true) Removes Edge only.
 
