@@ -19,10 +19,10 @@ Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
 [Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove all Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
 <br>
 
-**Batch Version**  (Requires internet or file from _Source)
-[Both.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Both.bat?raw=true) Removes both Edge, and WebView.  
-[Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge.bat?raw=true) Removes Edge only.  
-[Edge-Appx.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge-Appx.bat?raw=true) Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
+**Batch Version**  (Requires internet or file from _Source)  
+[Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) Removes both Edge, and WebView.  
+[Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) Removes Edge only.  
+[Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
 <br>
 
 Removing Edge requires an internet connection to download a file.  
