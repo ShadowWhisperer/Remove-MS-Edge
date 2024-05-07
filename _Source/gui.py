@@ -28,7 +28,7 @@ from tkinter.scrolledtext import ScrolledText
 
 #GUI Settings
 root = Tk()
-root.title("Bye Bye Edge - 10/16/2023 - https://github.com/ShadowWhisperer") #Windows Title
+root.title("Bye Bye Edge - 5/07/2024 - ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
 
@@ -112,7 +112,8 @@ def remove_edge():
     #Edge Appx Packages
     output_terminal.insert(END, "\nRemoving Appx Packages\n")
     root.update()
-    user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
+    #user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
+    user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
     output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
     edge_apps = output.decode().strip().split('\r\n')
     if output:
@@ -168,9 +169,6 @@ def remove_edge():
     subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], startupinfo=hide_console())
     subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], startupinfo=hide_console())
 
-    #Edge Update - Remaining
-    subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], startupinfo=hide_console())
-    
     #Program Files (x86)\Microsoft\Edge\Edge.dat
     os.remove(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") if os.path.isfile(r"C:\Program Files (x86)\Microsoft\Edge\Edge.dat") else None
 

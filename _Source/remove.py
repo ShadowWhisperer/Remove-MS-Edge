@@ -44,7 +44,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 10/16/2023 - https://github.com/ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/4/2024 - ShadowWhisperer")
 
 #Hide CMD/Powershell
 def hide_console():
@@ -72,13 +72,12 @@ if not edge_only_mode:
         if not silent_mode:
             print("Removing WebView")
         cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        time.sleep(2)
+        process = subproc
 
 ################################################################################################################################################
 
 #Remove Edge Appx Packages
-user_sid = subprocess.check_output(["powershell", "(Get-LocalUser -Name $env:USERNAME).SID.Value"], startupinfo=hide_console()).decode().strip()
+user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
 output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
 edge_apps = output.decode().strip().split('\r\n')
 if output:
@@ -127,9 +126,6 @@ for name in service_names:
     if subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console()).returncode == 0:
         subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-# Edge Update - Remaining
-subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 # Remaining Edge Keys - HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge
 if not os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
