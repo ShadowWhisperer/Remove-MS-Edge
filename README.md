@@ -6,21 +6,30 @@
 - Removing Edge may cause update failure loop. 
   Install Edge, install all Windows updates, then remove Edge. 
 
-- .exe versions have been moved to the Retired folder, due to too many complaints of false positives  
+- Some reports of Windows Defender blocking this. Disable Defender first.  
+ 
+Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
+/s  Silent      Do not print anything, or change title of window  
+/e  Edge Only   Do not remove WebView  
 ```
 
-[Both.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Both.bat?raw=true) Removes both Edge, and WebView.
-
-[Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge.bat?raw=true) Removes Edge only.
-
-[Edge-Appx.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge-Appx.bat?raw=true) Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
-
+**EXE Version**  
+[Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe?raw=true) Removes edge, does not remove WebView.  
+[Remove-Edge_GUI.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge_GUI.exe?raw=true) Full uninstaller with interface (option to omit WebView)  [Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes both edge, and WebView.
 [Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove all Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
+<br>
 
+**Batch Version**  (Requires internet or file from _Source)
+[Both.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Both.bat?raw=true) Removes both Edge, and WebView.  
+[Edge.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge.bat?raw=true) Removes Edge only.  
+[Edge-Appx.bat](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Edge-Appx.bat?raw=true) Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
 <br>
 
 Removing Edge requires an internet connection to download a file.  
 To make it work without internet, download [setup.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/setup.exe?raw=true), from _Source and keep it next to the .bat
 
 Re-Install Edge: [Small DL](https://www.microsoft.com/en-us/edge/download?form=MA13FJ)  /  [Full DL](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
+<br>
+
+![Screenshot_GUI](https://github.com/ShadowWhisperer/Remove-MS-Edge/assets/61057625/247433f9-cb20-4cfc-9c13-bf022ecb4dda)
 
