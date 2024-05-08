@@ -12,6 +12,13 @@ Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
 /s  Silent      Do not print anything, or change title of window  
 /e  Edge Only   Do not remove WebView  
 ```
+<br>
+
+**Requires WebView**  
+```
+- Quicken  
+- Xbox App  
+```
 
 **EXE Version**  
 [Remove-EdgeOnly.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeOnly.exe?raw=true) Removes edge, does not remove WebView.  
