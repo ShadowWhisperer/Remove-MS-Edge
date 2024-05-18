@@ -16,7 +16,8 @@ Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
 
 **Requires WebView**  
 ```
-- Quicken  
+- Quicken
+- Windows Mail  
 - Xbox App  
 ```
 
