@@ -30,7 +30,7 @@ from tkinter.scrolledtext import ScrolledText
 root = Tk()
 root.title("Bye Bye Edge - 5/07/2024 - ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
-root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
+root.iconbitmap(f"{sys._MEIPASS}/icon.ico") #Icon
 
 #Check if running as admin
 if not ctypes.windll.shell32.IsUserAnAdmin():
@@ -207,7 +207,7 @@ def remove_edge():
                 folder_path = os.path.join(directory, folder)
                 output_terminal.insert(END, f" Folder: {folder_path}\n")
                 root.update()
-                subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), startupinfo=hide_console(), shell=True)
+                subprocess.run(f'takeown /f "{folder_path}" /r /d y && icacls "{folder_path}" /grant administrators:F /t && rd /s /q "{folder_path}"', startupinfo=hide_console(), shell=True)
 
     #Delete extra folders
     subprocess.run('rmdir /q /s "C:\\Program Files (x86)\\Microsoft\\Temp"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

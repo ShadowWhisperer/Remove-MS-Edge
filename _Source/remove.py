@@ -137,7 +137,7 @@ for directory, dirs, files in os.walk(r"C:\Windows\SystemApps"):
         if folder.startswith("Microsoft.MicrosoftEdge"):
             folder_path = os.path.join(directory, folder)
             with open(os.devnull, "w") as devnull:
-                subprocess.run('takeown /f "{}" /r /d y && icacls "{}" /grant administrators:F /t && rd /s /q "{}"'.format(folder_path, folder_path, folder_path), startupinfo=hide_console(), shell=True, stdout=devnull, stderr=devnull)
+                subprocess.run(f'takeown /f "{folder_path}" /r /d y && icacls "{folder_path}" /grant administrators:F /t && rd /s /q "{folder_path}"', startupinfo=hide_console(), shell=True, stdout=devnull, stderr=devnull)
 
 #System32 Files
 user_name = getpass.getuser()
