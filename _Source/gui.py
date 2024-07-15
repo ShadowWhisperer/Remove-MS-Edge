@@ -83,8 +83,6 @@ def remove_edge():
         command = [src, '--uninstall', '--system-level', '--force-uninstall']
         subprocess.run(command, shell=True)
         time.sleep(3)
-    else:
-        pass
 
     subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -125,8 +123,6 @@ def remove_edge():
             subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
             output_terminal.insert(END, f" {app}\n")
             root.update()
-    else:
-        pass
 
 ######################################################################################################################################
 
@@ -183,8 +179,6 @@ def remove_edge():
       os.remove("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk")
       output_terminal.insert(END, " File: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk\n")
       root.update()
-    else:
-      pass
 
     #System32 Files
     user_name = getpass.getuser()

@@ -87,8 +87,6 @@ if output:
         winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
-else:
-    pass
 
 ################################################################################################################################################
 
