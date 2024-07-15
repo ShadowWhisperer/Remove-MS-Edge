@@ -65,16 +65,13 @@ def remove_edge():
             time.sleep(3)
             if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
                 output_terminal.insert(END, " Uninstall Failed!\n", "red")
-                root.update()
             else:
                 output_terminal.insert(END, " Successfully Removed\n\n", "green")
-                root.update()
         else:
             output_terminal.insert(END, " Successfully Removed\n\n", "green")
-            root.update()
     else:
         output_terminal.insert(END, " Not Found\n\n", "green")
-        root.update()
+    root.update()
 
 ######################################################################################################################################
 
