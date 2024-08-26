@@ -1,7 +1,7 @@
 <a href="https://www.buymeacoffee.com/wic8pmtmys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Piza" height="36" width="120"></a>
 
 
-**Microsoft Edge / Edge WebView uninstallers**
+**Microsoft Edge Uninstallers**
 ```diff
 - Removing Edge may cause update failure loop. 
   Install Edge, install all Windows updates, then remove Edge. 
