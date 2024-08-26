@@ -8,7 +8,7 @@
 
 - Some reports of Windows Defender blocking this. Disable Defender first.  
  
-Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
+Flags - Remove-Edge.exe
 /s  Silent      Do not print anything, or change title of window  
 ```
 <br>
