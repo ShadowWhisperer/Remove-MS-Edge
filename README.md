@@ -15,13 +15,6 @@ Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
 
 Due to how common WebView is now, WebView is remained untouched. (Except the batch version)
 
-**Requires WebView**  
-```
-- Lenovo USB Recovery Creator Tool
-- Quicken
-- Windows Mail  
-- Xbox App  
-```
 
 **EXE Version**  
 [Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes Edge only, leaves WebView alone.  
