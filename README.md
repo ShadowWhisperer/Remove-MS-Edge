@@ -13,6 +13,8 @@ Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
 ```
 <br>
 
+Due to how common WebView is now, WebView is remained untouched. (Except the batch version)
+
 **Requires WebView**  
 ```
 - Lenovo USB Recovery Creator Tool
@@ -24,7 +26,6 @@ Flags - Remove-Edge.exe  Remove-EdgeOnly.exe
 **EXE Version**  
 [Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes Edge only, leaves WebView alone.  
 [Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
-<br>
 
 **Batch Version**  (Requires internet or file from _Source)  
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) Removes both Edge, and WebView.  
@@ -37,6 +38,3 @@ To make it work without internet, download [setup.exe](https://github.com/Shadow
 
 Re-Install Edge: [Small DL](https://www.microsoft.com/en-us/edge/download?form=MA13FJ)  /  [Full DL](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
 <br>
-
-![Screenshot_GUI](https://github.com/ShadowWhisperer/Remove-MS-Edge/assets/61057625/247433f9-cb20-4cfc-9c13-bf022ecb4dda)
-
