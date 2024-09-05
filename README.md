@@ -24,7 +24,7 @@ Flags - Remove-Edge.exe
 
 **EXE Version**  
 [Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes Edge only, leaves WebView alone.  
-[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeWeb.exe?raw=true) Removes Edge and WebView  
+[Remove-EdgeWeb.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeWeb.exe?raw=true) Removes Edge and WebView  
 [Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
 
 **Batch Version**  (Requires internet or file from _Source)  
