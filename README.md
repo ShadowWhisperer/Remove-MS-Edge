@@ -13,11 +13,18 @@ Flags - Remove-Edge.exe
 ```
 <br>
 
-Due to how common WebView is now, WebView is remained untouched. (Except the batch version)
 
+**Requires WebView**  
+```
+- Lenovo USB Recovery Creator Tool
+- Quicken
+- Windows Mail  
+- Xbox App  
+```
 
 **EXE Version**  
 [Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes Edge only, leaves WebView alone.  
+[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeWeb.exe?raw=true) Removes Edge and WebView  
 [Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
 
 **Batch Version**  (Requires internet or file from _Source)  
