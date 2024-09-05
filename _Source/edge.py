@@ -1,7 +1,6 @@
 #
 #
-#  Remove Edge Only - 8.26.2024
-#
+#  Remove Both - 9.5.2024
 #
 #
 # Check if ran with admin permissions
@@ -45,7 +44,11 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/26/2024 - ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 9/6/2024 - ShadowWhisperer")
+
+
+edge_only_mode = False
+
 
 #Hide CMD/Powershell
 def hide_console():
@@ -67,7 +70,14 @@ if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application"):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     time.sleep(2)
 
-################################################################################################################################################
+#WebView
+if not edge_only_mode:
+    if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"):
+        if not silent_mode:
+            print("Removing WebView")
+        cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        time.sleep(2)
 
 #Remove Edge Appx Packages - Ignore 'MicrosoftEdgeDevTools'
 user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
@@ -86,6 +96,7 @@ if output:
         subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
 
 ################################################################################################################################################
+
 
 #Edge Update - Leftovers
 subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
