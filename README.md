@@ -18,6 +18,7 @@ Flags - Remove-Edge.exe
 ```
 - ImageGlass
 - Lenovo USB Recovery Creator Tool
+- Microsoft Photos App (Edit)
 - Quicken
 - Windows Mail  
 - Xbox App  
@@ -38,4 +39,5 @@ The batch version requires an internet connection to download a file.
 To make it work without internet, download [setup.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/setup.exe?raw=true), from _Source and keep it next to the .bat
 
 Re-Install Edge: [Small DL](https://www.microsoft.com/en-us/edge/download?form=MA13FJ)  /  [Full DL](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
-<br>
+Re-Install Webview: [Link](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)  
+<br>  
