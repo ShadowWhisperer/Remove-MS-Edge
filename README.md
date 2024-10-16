@@ -16,6 +16,7 @@ Flags - Remove-Edge.exe
 
 **Requires WebView**  
 ```
+- ImageGlass
 - Lenovo USB Recovery Creator Tool
 - Quicken
 - Windows Mail  
