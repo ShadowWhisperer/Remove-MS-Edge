@@ -4,49 +4,61 @@
 :: Download setup.exe from Repo
 :: Check download / HASH
 :: Remove Edge
-:: Remove Webview
 :: Remove Extras
 :: Remove APPX
-::
-::
-::
-::    Breaks Webview - If deleted
-::  HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate
 ::
 ::
 
 
 net session >nul 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
-title Edge Remover
+title Edge Remover - 10/26/2024
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
-
+Set "DL=0"
 
 :#Portable
 if exist "%~dp0setup.exe" (
     powershell -Command "$hash = (Get-FileHash '%~dp0setup.exe' -Algorithm SHA256).Hash.ToLower(); if ($hash -eq '%expected%') { exit 0 } else { exit 1 }"
     if %errorlevel% equ 1 (
-        goto DownloadFile
+        set "DL=1"
     ) else (
         set SRC=%~dp0setup.exe
     )
 ) else (
-    goto DownloadFile
+    set "DL=1"
+)
+
+:#Download
+if "%DL%" == "1" (
+set SRC=%tmp%\setup.exe
+ipconfig | find "IPv" > nul
+if %errorlevel% neq 0 echo. & echo You are not connected to a network ! & echo. & pause & exit
+echo - Downloading Required File
+powershell -Command "$url = 'https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe'; $path = '%tmp%\setup.exe'; try { (New-Object Net.WebClient).DownloadFile($url, $path) } catch { Write-Host 'Error downloading the file.' }"
+::Check HASH
+if exist "%tmp%\setup.exe" (
+    powershell -Command "$hash = (Get-FileHash '%tmp%\setup.exe' -Algorithm SHA256).Hash.ToLower(); if ($hash -eq '%expected%') { exit 0 } else { exit 1 }"
+    if %errorlevel% equ 1 (
+        echo File hash does not match the expected value. & echo & pause & exit
+    )
+) else (
+    echo File download failed. Check your internet connection & echo & pause & exit)
 )
 
 
 
 echo.
-echo - Removing Edge
 
 :# Edge
+echo - Removing Edge
 if exist "C:\Program Files (x86)\Microsoft\Edge\Application\" (
 for /f "delims=" %%a in ('dir /b "C:\Program Files (x86)\Microsoft\Edge\Application\"') do (
-start /w "%SRC%" --uninstall --system-level --force-uninstall))
+start /w %SRC% --uninstall --system-level --force-uninstall))
 
-:# EdgeWebView
+:# WebView
+echo - Removing WebView
 if exist "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\" (
 for /f "delims=" %%a in ('dir /b "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\"') do (
-start /w "%SRC%" --uninstall --msedgewebview --system-level --force-uninstall))
+start /w %SRC% --uninstall --msedgewebview --system-level --force-uninstall))
 ::Delete empty folders
 for /f "delims=" %%d in ('dir /ad /b /s "C:\Program Files (x86)\Microsoft\EdgeWebView" 2^>nul ^| sort /r') do rd "%%d" 2>nul
 
@@ -114,28 +126,4 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUs
         powershell -Command "Remove-AppxPackage -Package '!APP!'" 2>nul
         powershell -Command "Remove-AppxPackage -Package '!APP!' -AllUsers" 2>nul
     )
-)
-endlocal
-
-
-
-
-
-
-exit
-
-:DownloadFile
-set SRC=%tmp%\setup.exe
-ipconfig | find "IPv" > nul
-if %errorlevel% neq 0 echo. & echo You are not connected to a network ! & echo. & pause & exit
-echo - Downloading Required File
-powershell -Command "$url = 'https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe'; $path = '%tmp%\setup.exe'; try { (New-Object Net.WebClient).DownloadFile($url, $path) } catch { Write-Host 'Error downloading the file.' }"
-::Check HASH
-if exist "%tmp%\setup.exe" (
-    powershell -Command "$hash = (Get-FileHash '%tmp%\setup.exe' -Algorithm SHA256).Hash.ToLower(); if ($hash -eq '%expected%') { exit 0 } else { exit 1 }"
-    if %errorlevel% equ 1 (
-        echo File hash does not match the expected value. & echo & pause & exit
-    )
-) else (
-    echo File download failed. Check your internet connection & echo & pause & exit
 )
