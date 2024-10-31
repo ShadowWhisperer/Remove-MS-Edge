@@ -11,7 +11,7 @@
 
 
 net session >nul 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
-title Edge Remover - 10/26/2024
+title Edge Remover - 10/31/2024
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
 Set "DL=0"
 
@@ -52,13 +52,13 @@ echo.
 echo - Removing Edge
 if exist "C:\Program Files (x86)\Microsoft\Edge\Application\" (
 for /f "delims=" %%a in ('dir /b "C:\Program Files (x86)\Microsoft\Edge\Application\"') do (
-start /w %SRC% --uninstall --system-level --force-uninstall))
+start /w "" "%SRC%" --uninstall --system-level --force-uninstall))
 
 :# WebView
 echo - Removing WebView
 if exist "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\" (
 for /f "delims=" %%a in ('dir /b "C:\Program Files (x86)\Microsoft\EdgeWebView\Application\"') do (
-start /w %SRC% --uninstall --msedgewebview --system-level --force-uninstall))
+start /w "" "%SRC%" --uninstall --msedgewebview --system-level --force-uninstall))
 ::Delete empty folders
 for /f "delims=" %%d in ('dir /ad /b /s "C:\Program Files (x86)\Microsoft\EdgeWebView" 2^>nul ^| sort /r') do rd "%%d" 2>nul
 
