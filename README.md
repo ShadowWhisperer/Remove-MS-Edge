@@ -5,10 +5,8 @@
 ```diff
 - Removing Edge may cause update failure loop. 
   Install Edge, install all Windows updates, then remove Edge. 
-
-- Some reports of Windows Defender blocking this. Disable Defender first.  
  
-Flags - Remove-Edge.exe
+Flag - Remove-Edge.exe
 /s  Silent      Do not print anything, or change title of window  
 ```
 <br>
