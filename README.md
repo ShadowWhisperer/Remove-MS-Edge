@@ -40,3 +40,7 @@ To make it work without internet, download [setup.exe](https://github.com/Shadow
 Re-Install Edge: [Small DL](https://www.microsoft.com/en-us/edge/download?form=MA13FJ)  /  [Full DL](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
 Re-Install Webview: [Link](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)  
 <br>  
+
+**Build From Source**  
+```pyinstaller --noconsole --onefile -n Remove-Edge.exe edge.py --add-data "setup.exe;."```  
+<br>  
