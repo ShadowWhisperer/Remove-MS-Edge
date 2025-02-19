@@ -12,7 +12,6 @@ Flag - Remove-Edge.exe
 ```
 <br>
 
-
 **Requires WebView**  
 ```
 - ImageGlass
@@ -24,14 +23,19 @@ Flag - Remove-Edge.exe
 ```
 
 **EXE Version**  
-[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) Removes Edge only, leaves WebView alone.  
-[Remove-EdgeWeb.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeWeb.exe?raw=true) Removes Edge and WebView  
-[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) Remove Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
+[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) - Removes Edge only, leaves WebView alone.  
+[Remove-EdgeWeb.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeWeb.exe?raw=true) - Removes Edge and WebView  
+[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) - Remove Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
+
+<br>
 
 **Batch Version**  (Requires internet or file from _Source)  
-[Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) Removes both Edge, and WebView.  
-[Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) Removes Edge only.  
-[Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
+
+The bath scripts have been enhanced by @XakerTwo  
+
+[Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
+[Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge only.  
+[Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) - Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
 <br>
 
 The batch version requires an internet connection to download a file.  
