@@ -11,52 +11,45 @@
 net session >nul 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
 title Edge Remover - 2/18/2025
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
-set "DL=0"
 
-:#Portable
-if exist "%~dp0setup.exe" (
-    powershell -Command "$hash = (Get-FileHash '%~dp0setup.exe' -Algorithm SHA256).Hash.ToLower(); if ($hash -eq '%expected%') { exit 0 } else { exit 1 }"
-    if %errorlevel% equ 1 (
-        set "DL=1"
-    ) else (
-        set SRC=%~dp0setup.exe
-    )
-) else (
-    set "DL=1"
-)
+set "onHashErr=download"
 
-:#Download
-if "%DL%" == "1" (
-set SRC=%tmp%\setup.exe
-ipconfig | find "IPv" > nul
+set "fileSetup=%~dp0setup.exe"
+if exist "%fileSetup%" goto file_check;
+set "fileSetup=%tmp%\setup.exe"
+if exist "%fileSetup%" goto file_check;
+
+:file_download
+set "onHashErr=error"
+ipconfig | find "IPv" >nul
 if %errorlevel% neq 0 echo. & echo You are not connected to a network ! & echo. & pause & exit
+
 echo - Downloading Required File
-powershell -Command "$url = 'https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe'; $path = '%tmp%\setup.exe'; try { (New-Object Net.WebClient).DownloadFile($url, $path) } catch { Write-Host 'Error downloading the file.' }"
-::Check HASH
-if exist "%tmp%\setup.exe" (
-    powershell -Command "$hash = (Get-FileHash '%tmp%\setup.exe' -Algorithm SHA256).Hash.ToLower(); if ($hash -eq '%expected%') { exit 0 } else { exit 1 }"
-    if %errorlevel% equ 1 (
-        echo File hash does not match the expected value. & echo & pause & exit
-    )
-) else (
-    echo File download failed. Check your internet connection & echo & pause & exit)
-)
+powershell -Command "try { (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe', '%fileSetup%') } catch { Write-Host 'Error downloading the file.' }"
+if not exist "%fileSetup%" echo File download failed. Check your internet connection & echo & pause & exit
 
+:file_check
+powershell -Command "exit ((Get-FileHash '%fileSetup%' -Algorithm SHA256).Hash.ToLower() -neq '%expected%')"
+if %errorlevel% neq 0 goto file_%onHashErr%
+echo. & goto uninst_edge
 
-echo.
+:file_error
+echo File hash does not match the expected value. & echo & pause & exit
+
 
 REM #Edge
+:uninst_edge
 echo - Removing Edge
 where /q "%ProgramFiles(x86)%\Microsoft\Edge\Application:*"
 if %errorlevel% neq 0 goto uninst_wv
-start /w "" "%SRC%" --uninstall --system-level --force-uninstall
+start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
 
 REM #WebView
 :uninst_wv
 echo - Removing WebView
 where /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application:*"
 if %errorlevel% neq 0 goto cleanup_wv_junk
-start /w "" "%SRC%" --uninstall --msedgewebview --system-level --force-uninstall
+start /w "" "%fileSetup%" --uninstall --msedgewebview --system-level --force-uninstall
 REM Delete empty folders
 :cleanup_wv_junk
 REM rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
