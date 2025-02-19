@@ -9,11 +9,13 @@ title Edge Remover - 2/18/2025
 echo - Removing APPX
 
 for /f "delims=" %%a in ('powershell "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"') do set "USER_SID=%%a"
+
+set "REG_APPX_STORE=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PackageFullName -like '*microsoftedge*' } | Select-Object -ExpandProperty PackageFullName"') do ( 
     if not "%%a"=="" ( 
-        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife\%USER_SID%\%%a" /f >nul 2>&1
-        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife\S-1-5-18\%%a" /f >nul 2>&1
-        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\%%a" /f >nul 2>&1
+        reg add "%REG_APPX_STORE%\EndOfLife\%USER_SID%\%%a" /f >nul 2>&1
+        reg add "%REG_APPX_STORE%\EndOfLife\S-1-5-18\%%a" /f >nul 2>&1
+        reg add "%REG_APPX_STORE%\Deprovisioned\%%a" /f >nul 2>&1
         powershell -Command "Remove-AppxPackage -Package '%%a'" 2>nul
         powershell -Command "Remove-AppxPackage -Package '%%a' -AllUsers" 2>nul
     )

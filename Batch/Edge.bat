@@ -53,16 +53,36 @@ start /w "" "%SRC%" --uninstall --system-level --force-uninstall))
 
 
 
-:# Additional Files
+REM #Additional Files
+
+REM Desktop icon
+:users_cleanup
 echo - Removing Additional Files
 
-:: %ProfilesDir% = %SystemDrive%\Users
-for /f "tokens=3 delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList" /v ProfilesDirectory ^| findstr ProfilesDirectory') do set ProfilesDir=%%A
+set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_rem_lnks_by_path %%d )
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_rem_lnks_by_path %%d )
+for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_rem_lnks_by_sid %%k )
+goto users_done
 
-:: Desktop icon
-for /f "delims=" %%a in ('dir /b "%ProfilesDir%"') do (
-del /S /Q "%ProfilesDir%\%%a\Desktop\edge.lnk" >nul 2>&1
-del /S /Q "%ProfilesDir%\%%a\Desktop\Microsoft Edge.lnk" >nul 2>&1)
+:user_rem_lnks_by_sid
+if "%1"=="S-1-5-18" goto user_end
+if "%1"=="S-1-5-19" goto user_end
+if "%1"=="S-1-5-20" goto user_end
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
+	call :user_rem_lnks_by_path %%d
+	if "%UserProfile%"=="%%d" set "USER_SID=%1"
+)
+goto user_end
+
+:user_rem_lnks_by_path
+del /s /q "%1\Desktop\edge.lnk" >nul 2>&1
+del /s /q "%1\Desktop\Microsoft Edge.lnk" >nul 2>&1
+
+:user_end
+exit /b 0
+
+:users_done
 
 :: System32
 if exist "%SystemRoot%\System32\MicrosoftEdgeCP.exe" (
@@ -105,12 +125,17 @@ for %%n in (%service_names%) do (
 
 :# APPX
 echo - Removing APPX
+
+if defined USER_SID goto rem_appX
 for /f "delims=" %%a in ('powershell "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"') do set "USER_SID=%%a"
+
+:rem_appX
+set "REG_APPX_STORE=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PackageFullName -like '*microsoftedge*' } | Select-Object -ExpandProperty PackageFullName"') do ( 
     if not "%%a"=="" ( 
-        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife\%USER_SID%\%%a" /f >nul 2>&1
-        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife\S-1-5-18\%%a" /f >nul 2>&1
-        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\%%a" /f >nul 2>&1
+        reg add "%REG_APPX_STORE%\EndOfLife\%USER_SID%\%%a" /f >nul 2>&1
+        reg add "%REG_APPX_STORE%\EndOfLife\S-1-5-18\%%a" /f >nul 2>&1
+        reg add "%REG_APPX_STORE%\Deprovisioned\%%a" /f >nul 2>&1
         powershell -Command "Remove-AppxPackage -Package '%%a'" 2>nul
         powershell -Command "Remove-AppxPackage -Package '%%a' -AllUsers" 2>nul
     )
