@@ -45,18 +45,21 @@ if exist "%tmp%\setup.exe" (
 
 echo.
 
-:# Edge
+REM #Edge
 echo - Removing Edge
-if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\" (
-for /f "delims=" %%a in ('dir /b "%ProgramFiles(x86)%\Microsoft\Edge\Application\"') do (
-start /w "" "%SRC%" --uninstall --system-level --force-uninstall))
+where /q "%ProgramFiles(x86)%\Microsoft\Edge\Application:*"
+if %errorlevel% neq 0 goto uninst_wv
+start /w "" "%SRC%" --uninstall --system-level --force-uninstall
 
-:# WebView
+REM #WebView
+:uninst_wv
 echo - Removing WebView
-if exist "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application\" (
-for /f "delims=" %%a in ('dir /b "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application\"') do (
-start /w "" "%SRC%" --uninstall --msedgewebview --system-level --force-uninstall))
-::Delete empty folders
+where /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application:*"
+if %errorlevel% neq 0 goto cleanup_wv_junk
+start /w "" "%SRC%" --uninstall --msedgewebview --system-level --force-uninstall
+REM Delete empty folders
+:cleanup_wv_junk
+REM rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
 for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebView" 2^>nul ^| sort /r') do rd "%%d" 2>nul
 
 

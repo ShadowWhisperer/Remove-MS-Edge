@@ -45,11 +45,11 @@ if exist "%tmp%\setup.exe" (
 
 echo.
 
-:# Edge
+REM #Edge
 echo - Removing Edge
-if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\" (
-for /f "delims=" %%a in ('dir /b "%ProgramFiles(x86)%\Microsoft\Edge\Application\"') do (
-start /w "" "%SRC%" --uninstall --system-level --force-uninstall))
+where /q "%ProgramFiles(x86)%\Microsoft\Edge\Application:*"
+if %errorlevel% neq 0 goto uninst_wv
+start /w "" "%SRC%" --uninstall --system-level --force-uninstall
 
 
 
