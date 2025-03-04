@@ -31,7 +31,7 @@ Flag - Remove-Edge.exe
 
 **Batch Version**  (Requires internet or file from _Source)  
 
-The bath scripts have been enhanced by @XakerTwo  
+The batch scripts have been enhanced by @XakerTwo  
 
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
 [Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge only.  
