@@ -100,7 +100,7 @@ taskkill /im MicrosoftEdgeUpdate.exe /f >NUL 2>&1
 rd /s /q "%ProgramFiles(x86)%\Microsoft\Edge" >NUL 2>&1
 rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeCore" >NUL 2>&1
 rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeUpdate" >NUL 2>&1
-rd /s /q "%ProgramFiles(x86)%\Microsoft\Temp >NUL 2>&1
+rd /s /q "%ProgramFiles(x86)%\Microsoft\Temp" >NUL 2>&1
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" >NUL 2>&1
 
 REM Files
