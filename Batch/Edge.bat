@@ -8,6 +8,7 @@ REM Remove Extras
 REM Remove APPX
 REM
 
+REM #Admin Permissions
 net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
 title Edge Remover - 2/18/2025
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
@@ -41,9 +42,7 @@ REM #Edge
 :uninst_edge
 echo - Removing Edge
 where /q "%ProgramFiles(x86)%\Microsoft\Edge\Application:*"
-if %errorlevel% neq 0 goto uninst_wv
-start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
-
+if %errorlevel% equ 0 start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
 
 
 REM #Additional Files
