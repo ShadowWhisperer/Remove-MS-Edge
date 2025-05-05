@@ -39,29 +39,54 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 2/12/2025 - ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/05/2025 - ShadowWhisperer")
 
-#Hide CMD/Powershell
+# Hide CMD/Powershell
 def hide_console():
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     return startupinfo
 
-#Set Paths
-src = os.path.join(sys._MEIPASS, "setup.exe")
+# Set Paths
+src = os.path.join(sys._MEIPASS, "setup.exe") if hasattr(sys, '_MEIPASS') else "setup.exe"
 PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")
 PROGRAM_FILES = os.environ.get("ProgramFiles", r"C:\\Program Files")
 SYSTEM_ROOT = os.environ.get("SystemRoot", r"C:\\Windows")
 PROGRAM_DATA = os.environ.get("ProgramData", r"C:\\ProgramData")
 
-#Get user profiles
+# Get user profiles
 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
     user_profiles = [winreg.EnumKey(key, i) for i in range(winreg.QueryInfoKey(key)[0])]
     USERS_DIR = [winreg.QueryValueEx(winreg.OpenKey(key, profile), "ProfileImagePath")[0] for profile in user_profiles]
 
-################################################################################################################################################
+# Get user SID
+user_sid = subprocess.check_output(
+    ["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"],
+    startupinfo=hide_console()
+).decode().strip()
 
-#Edge
+
+# Delete / recreate registry keys
+# https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
+def clear_and_recreate_registry_keys():
+    registry_paths = [
+        f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\Appx acronymsAllUserStore\\EndOfLife\\{user_sid}",
+        f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18",
+        f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned"
+    ]
+
+    for path in registry_paths:
+        try:
+            winreg.DeleteKeyEx(winreg.HKEY_LOCAL_MACHINE, path, winreg.KEY_WOW64_64KEY, 0)
+            winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY)
+        except:
+            pass
+
+terminate_edge_processes()
+clear_and_recreate_registry_keys()
+
+
+# Edge
 EDGE_PATH = os.path.join(PROGRAM_FILES_X86, r"Microsoft\\Edge\\Application\\pwahelper.exe")
 if os.path.exists(EDGE_PATH):
     if not silent_mode:
@@ -70,40 +95,30 @@ if os.path.exists(EDGE_PATH):
     subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     os.system("timeout /t 2 >nul")
 
-#Edge (Appx Packages)  *Ignore 'MicrosoftEdgeDevTools'
-user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
-output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-edge_apps = output.decode().strip().split('\r\n')
-if output:
-    for app in edge_apps:
-        if 'MicrosoftEdgeDevTools' in app:
-            continue
-        # Create registry keys
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}")
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
-        # Remove the package for the current user and all users
-        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
-        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
+# WebView
+EDGE_PATH = os.path.join(PROGRAM_FILES_X86, r"Microsoft\\EdgeWebView\\Application")
+if os.path.exists(EDGE_PATH):
+    if not silent_mode:
+        print("Removing WebView")
+    cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+    subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
 
-################################################################################################################################################
-
-#Startup - Active Setup
+# Startup - Active Setup
 subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-#Desktop Icons
+# Desktop Icons
 for user_dir in USERS_DIR:
     desktop_path = os.path.join(user_dir, "Desktop")
     for link in [os.path.join(desktop_path, name) for name in ["edge.lnk", "Microsoft Edge.lnk"]]:
         if os.path.exists(link):
             os.remove(link)
 
-#Start Menu Icon
+# Start Menu Icon
 START_MENU_PATH = os.path.join(PROGRAM_DATA, "Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk")
 if os.path.exists(START_MENU_PATH):
     os.remove(START_MENU_PATH)
 
-#Tasks - Name
+# Tasks - Name
 result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, startupinfo=hide_console())
 tasks = result.stdout.strip().split('\n')[1:]
 microsoft_edge_tasks = [task.split(',')[0].strip('"') for task in tasks if 'MicrosoftEdge' in task]
@@ -111,7 +126,7 @@ with open(os.devnull, 'w') as devnull:
     for task in microsoft_edge_tasks:
         subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull, startupinfo=hide_console())
 
-#Tasks - Files
+# Tasks - Files
 TASKS_PATH = os.path.join(SYSTEM_ROOT, "System32\\Tasks")
 for root, dirs, files in os.walk(TASKS_PATH):
     for file in files:
@@ -119,23 +134,25 @@ for root, dirs, files in os.walk(TASKS_PATH):
             file_path = os.path.join(root, file)
             os.remove(file_path)
 
-#Edge Update Services
+# Edge Update Services
 service_names = ["edgeupdate", "edgeupdatem"]
 for name in service_names:
     if subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console()).returncode == 0:
         subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-#Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
+# Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
 SYSTEM_APPS_PATH = os.path.join(SYSTEM_ROOT, "SystemApps")
 for folder in next(os.walk(SYSTEM_APPS_PATH))[1]:
     if folder.startswith("Microsoft.MicrosoftEdge"):
-        subprocess.run(f'takeown /f "{os.path.join(SYSTEM_APPS_PATH, folder)}" /r /d y && '
-                       f'icacls "{os.path.join(SYSTEM_APPS_PATH, folder)}" /grant administrators:F /t && '
-                       f'rd /s /q "{os.path.join(SYSTEM_APPS_PATH, folder)}"',
-                       shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            f'takeown /f "{os.path.join(SYSTEM_APPS_PATH, folder)}" /r /d y && '
+            f'icacls "{os.path.join(SYSTEM_APPS_PATH, folder)}" /grant administrators:F /t && '
+            f'rd /s /q "{os.path.join(SYSTEM_APPS_PATH, folder)}"',
+            shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
 
-#System32 Files
+# System32 Files
 user_name = getpass.getuser()
 for f in os.scandir("C:\\Windows\\System32"):
     if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
@@ -143,10 +160,10 @@ for f in os.scandir("C:\\Windows\\System32"):
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
         os.remove(f.path)
 
-#Remaining Edge Keys
+# Remaining Edge Keys
 subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-#Folders - C:\Program Files (x86)\Microsoft
+# Folders - C:\Program Files (x86)\Microsoft
 subprocess.run(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 for folder in ["Edge", "EdgeCore", "EdgeUpdate", "Temp"]:
     folder_path = os.path.join(PROGRAM_FILES_X86, "Microsoft", folder)
