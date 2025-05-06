@@ -24,7 +24,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/05/2025 - ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/06/2025 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -69,17 +69,11 @@ user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.P
 # Delete bad keys
 # https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
 def is_compliant_subkey(name):
-    # - Starts with A-Z
-    # - Contains at least 2 periods
-    # - Contains at least 1 underscore
     # - Does not contain any spaces
-    if not name or not re.match(r'^[A-Z]', name):
+    # - Contains at least one letter (A-Z, capital or lowercase)
+    if not name or ' ' in name:
         return False
-    if name.count('.') < 2:
-        return False
-    if '_' not in name:
-        return False
-    if ' ' in name:
+    if not re.search(r'[A-Za-z]', name):
         return False
     return True
 
