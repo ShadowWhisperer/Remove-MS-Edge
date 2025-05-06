@@ -63,47 +63,6 @@ if os.path.exists(EDGE_PATH):
     cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
     subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
 
-################################################################################################################################################
-
-# Delete bad keys - https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
-def is_compliant_subkey(name):
-    # - Does not contain any spaces
-    # - Contains at least one letter (A-Z, capital or lowercase)
-    if not name or ' ' in name:
-        return False
-    if not re.search(r'[A-Za-z]', name):
-        return False
-    return True
-
-def clear_non_compliant_subkeys():
-    registry_paths = [
-        f"SOFTWARE\\Microsoft\\Windows\\Current五十Version\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}",
-        f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18",
-        f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned"
-    ]
-
-    for path in registry_paths:
-        try:
-            key = winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_ENUMERATE_SUB_KEYS | winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
-            subkeys = []
-            try:
-                i = 0
-                while True:
-                    subkey_name = winreg.EnumKey(key, i)
-                    subkeys.append(subkey_name)
-                    i += 1
-            except OSError:
-                pass
-            for subkey_name in subkeys:
-                if not is_compliant_subkey(subkey_name):
-                    try:
-                        winreg.DeleteKeyEx(key, subkey_name, winreg.KEY_WOW64_64KEY, 0)
-                    except:
-                        pass
-            winreg.CloseKey(key)
-        except:
-            pass
-
 # Edge (Appx Packages)  *Ignore 'MicrosoftEdgeDevTools'
 user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
 output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
@@ -115,8 +74,50 @@ for app in edge_apps:
     for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
         winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_WRITE | winreg.KEY_WOW64_64KEY)
 
-# Delete invlaid registry keys
-clear_non_compliant_subkeys()
+################################################################################################################################################
+
+# Delete bad reg keys - https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
+def should_delete(name):
+    no_letters = not re.search(r'[a-zA-Z]', name)
+    has_space = ' ' in name
+    return (no_letters or has_space), ("no letters" if no_letters else "") + (", contains space" if has_space and no_letters else "contains space" if has_space else "")
+
+def delete_tree(root, path):
+    try:
+        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as key:
+            while True:
+                try:
+                    delete_tree(root, f"{path}\\{winreg.EnumKey(key, 0)}")
+                except OSError:
+                    break
+        winreg.DeleteKeyEx(root, path, access=winreg.KEY_WOW64_64KEY)
+    except:
+        pass
+
+def clean_subkeys_in_sid_keys(root, base_path):
+    try:
+        with winreg.OpenKey(root, base_path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as base:
+            sid_keys = [winreg.EnumKey(base, i) for i in range(winreg.QueryInfoKey(base)[0])]
+    except:
+        return
+
+    for sid in sid_keys:
+        sid_path = f"{base_path}\\{sid}"
+        try:
+            with winreg.OpenKey(root, sid_path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as sid_key:
+                subkeys = [winreg.EnumKey(sid_key, j) for j in range(winreg.QueryInfoKey(sid_key)[0])]
+                for subkey in subkeys:
+                    if should_delete(subkey)[0]:
+                        delete_tree(root, f"{sid_path}\\{subkey}")
+        except:
+            continue
+
+for path in [
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife",
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned"
+]:
+    clean_subkeys_in_sid_keys(winreg.HKEY_LOCAL_MACHINE, path)
+
 
 ################################################################################################################################################
 
