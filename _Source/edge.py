@@ -63,11 +63,9 @@ if os.path.exists(EDGE_PATH):
     cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
     subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
 
-# Edge (Appx Packages)  *Ignore 'MicrosoftEdgeDevTools'
-user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
+################################################################################################################################################
 
-# Delete bad keys
-# https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
+# Delete bad keys - https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
 def is_compliant_subkey(name):
     # - Does not contain any spaces
     # - Contains at least one letter (A-Z, capital or lowercase)
@@ -106,25 +104,18 @@ def clear_non_compliant_subkeys():
         except:
             pass
 
-# Clear non-compliant subkeys before processing Appx packages
-clear_non_compliant_subkeys()
-
-# Process Appx packages
+# Edge (Appx Packages)  *Ignore 'MicrosoftEdgeDevTools'
+user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
 output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-edge_apps = output.decode().strip().split('\r\n')
-if output:
-    for app in edge_apps:
-        if 'MicrosoftEdgeDevTools' in app:
-            continue
-        # Create registry keys
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\{user_sid}\\{app}")
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\EndOfLife\\S-1-5-18\\{app}")
-        winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Deprovisioned\\{app}")
-        # Remove the package for the current user and all users
-        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} 2>$null'], startupinfo=hide_console())
-        subprocess.run(['powershell', '-Command', f'Remove-AppxPackage -Package {app} -AllUsers 2>$null'], startupinfo=hide_console())
+edge_apps = [app.strip() for app in output.decode().strip().split('\r\n') if app.strip()]
+for app in edge_apps:
+    if 'MicrosoftEdgeDevTools' in app:
+        continue
+    base_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
+    for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
+        winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_WRITE | winreg.KEY_WOW64_64KEY)
 
-# Clear non-compliant subkeys after processing Appx packages
+# Delete invlaid registry keys
 clear_non_compliant_subkeys()
 
 ################################################################################################################################################
