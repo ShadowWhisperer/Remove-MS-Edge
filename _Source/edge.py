@@ -24,7 +24,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/06/2025 - ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/07/2025 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -78,9 +78,7 @@ for app in edge_apps:
 
 # Delete bad reg keys - https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
 def should_delete(name):
-    no_letters = not re.search(r'[a-zA-Z]', name)
-    has_space = ' ' in name
-    return (no_letters or has_space), ("no letters" if no_letters else "") + (", contains space" if has_space and no_letters else "contains space" if has_space else "")
+    return not re.search(r'[a-zA-Z]', name) or ' ' in name
 
 def delete_tree(root, path):
     try:
@@ -94,30 +92,20 @@ def delete_tree(root, path):
     except:
         pass
 
-def clean_subkeys_in_sid_keys(root, base_path):
+def clean_subkeys(root, path):
     try:
-        with winreg.OpenKey(root, base_path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as base:
-            sid_keys = [winreg.EnumKey(base, i) for i in range(winreg.QueryInfoKey(base)[0])]
+        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as key:
+            for i in range(winreg.QueryInfoKey(key)[0]):
+                subkey = winreg.EnumKey(key, i)
+                subkey_path = f"{path}\\{subkey}"
+                if should_delete(subkey):
+                    delete_tree(root, subkey_path)
+                else:
+                    clean_subkeys(root, subkey_path)
     except:
-        return
+        pass
 
-    for sid in sid_keys:
-        sid_path = f"{base_path}\\{sid}"
-        try:
-            with winreg.OpenKey(root, sid_path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as sid_key:
-                subkeys = [winreg.EnumKey(sid_key, j) for j in range(winreg.QueryInfoKey(sid_key)[0])]
-                for subkey in subkeys:
-                    if should_delete(subkey)[0]:
-                        delete_tree(root, f"{sid_path}\\{subkey}")
-        except:
-            continue
-
-for path in [
-    r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife",
-    r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned"
-]:
-    clean_subkeys_in_sid_keys(winreg.HKEY_LOCAL_MACHINE, path)
-
+clean_subkeys(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore")
 
 ################################################################################################################################################
 
