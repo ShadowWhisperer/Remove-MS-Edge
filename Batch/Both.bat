@@ -53,7 +53,7 @@ if %errorlevel% neq 0 goto cleanup_wv_junk
 start /w "" "%fileSetup%" --uninstall --msedgewebview --system-level --force-uninstall
 REM Delete empty folders
 :cleanup_wv_junk
-REM rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
+rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
 for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebView" 2^>NUL ^| sort /r') do rd "%%d" 2>NUL
 
 
