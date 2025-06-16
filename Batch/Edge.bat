@@ -138,3 +138,32 @@ for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
  takeown /f "%%d" /r /d y >NUL 2>&1
  icacls "%%d" /grant administrators:F /t >NUL 2>&1
  rd /s /q "%%d" >NUL 2>&1)
+
+REM Malformed Keys
+echo - Fixing Registry
+setlocal EnableDelayedExpansion
+set "reg_path=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
+for /f "tokens=*" %%k in ('reg query "%reg_path%" /s 2^>nul ^| findstr /b /i "%reg_path%"') do (
+    set "full_key=%%k"
+    set "delete_key=false"
+    set "reason="
+    for %%a in ("!full_key!") do set "key_name=%%~nxa"
+    :: Skip empty or unchanged names
+    if "!key_name!"=="" (
+        set "reason=empty key name"
+    ) else if "!key_name!"=="!full_key!" (
+        set "reason=key name same as full path"
+    ) else (
+        :: Check for space
+        set "spaced_key=!key_name: =!"
+        if not "!key_name!"=="!spaced_key!" (
+            set "delete_key=true"
+        ) else (
+            :: Check for letters
+            echo /7 - !key_name! | findstr /r /c:"[a-zA-Z]" >nul
+            if !errorlevel! neq 0 set "delete_key=true"
+        )
+    )
+    if "!delete_key!"=="true" reg delete "!full_key!" /f >nul 2>&1
+)
+endlocal
