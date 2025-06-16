@@ -10,7 +10,7 @@ REM
 
 REM #Admin Permissions
 net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
-title Edge Remover - 2/18/2025
+title Edge Remover - 6/16/2025
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
 
 set "onHashErr=download"
