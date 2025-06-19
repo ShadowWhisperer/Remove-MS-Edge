@@ -13,6 +13,7 @@ Flag - Remove-Edge.exe
 
 **Requires WebView**  
 ```
+- Gmpublisher (Garry's Mod)
 - ImageGlass
 - Lenovo USB Recovery Creator Tool
 - Microsoft Photos App (Edit)
