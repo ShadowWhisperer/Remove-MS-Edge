@@ -13,14 +13,14 @@ Flag - Remove-Edge.exe
 
 **Requires WebView**  
 ```
-- Gmpublisher (Garry's Mod)
+- Eclipse IDEs
+- Gmpublisher (Garry's Mod)  
 - ImageGlass
 - Lenovo USB Recovery Creator Tool
 - Microsoft Photos App (Edit)
 - Quicken
 - Windows Mail  
 - Xbox App  
-- Eclipse IDEs
 ```
 
 **EXE Version**  
