@@ -20,6 +20,7 @@ Flag - Remove-Edge.exe
 - Quicken
 - Windows Mail  
 - Xbox App  
+- Eclipse IDEs
 ```
 
 **EXE Version**  
