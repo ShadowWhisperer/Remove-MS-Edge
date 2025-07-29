@@ -32,12 +32,14 @@ def hide_console():
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     return startupinfo
 
-# Set Paths
+# error fix if system drive letter != C:
+SYS_DRIVE_LETTER = os.environ.get("SYSTEMDRIVE", "C:") 
+# Set Paths (fixed for non-default system drive letter)
 src = os.path.join(sys._MEIPASS, "setup.exe")
-PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")
-PROGRAM_FILES = os.environ.get("ProgramFiles", r"C:\\Program Files")
-SYSTEM_ROOT = os.environ.get("SystemRoot", r"C:\\Windows")
-PROGRAM_DATA = os.environ.get("ProgramData", r"C:\\ProgramData")
+PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", os.path.join(SYS_DRIVE_LETTER, "Program Files (x86)"))
+PROGRAM_FILES = os.environ.get("ProgramFiles", os.path.join(SYS_DRIVE_LETTER, "Program Files"))
+SYSTEM_ROOT = os.environ.get("SystemRoot", os.path.join(SYS_DRIVE_LETTER, "Windows"))
+PROGRAM_DATA = os.environ.get("ProgramData", os.path.join(SYS_DRIVE_LETTER, "ProgramData"))
 
 # Get user profiles
 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
@@ -155,7 +157,7 @@ for folder in next(os.walk(SYSTEM_APPS_PATH))[1]:
 
 # System32 Files
 user_name = getpass.getuser()
-for f in os.scandir("C:\\Windows\\System32"):
+for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
     if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
         subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
