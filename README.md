@@ -20,7 +20,8 @@ Flag - Remove-Edge.exe
 - Microsoft Photos App (Edit)
 - Quicken
 - Windows Mail  
-- Xbox App  
+- Xbox App
+- PowerToys File Explorer add-ons utility
 ```
 
 **EXE Version**  
