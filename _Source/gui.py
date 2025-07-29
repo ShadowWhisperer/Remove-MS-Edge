@@ -26,11 +26,21 @@ import winreg         #Modify Windows Registry (Remove Edge Appx Packages)
 from tkinter import * #GUI
 from tkinter.scrolledtext import ScrolledText
 
+#as I understand GUI was not planned here, but I'll fix it just in case.
+SYS_DRIVE_LETTER = os.environ.get("SYSTEMDRIVE", "C:") 
+
+PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", os.path.join(SYS_DRIVE_LETTER, "Program Files (x86)"))
+PROGRAM_FILES = os.environ.get("ProgramFiles", os.path.join(SYS_DRIVE_LETTER, "Program Files"))
+SYSTEM_ROOT = os.environ.get("SystemRoot", os.path.join(SYS_DRIVE_LETTER, "Windows"))
+PROGRAM_DATA = os.environ.get("ProgramData", os.path.join(SYS_DRIVE_LETTER, "ProgramData"))
+
 #GUI Settings
 root = Tk()
 root.title("Bye Bye Edge - 5/07/2024 - ShadowWhisperer") #Windows Title
 root.geometry("800x500") #Windows Size (width x height)
 root.iconbitmap(sys._MEIPASS + "/icon.ico") #Icon
+
+SYS_DRIVE_LETTER = os.environ.get("SYSTEMDRIVE", "C:")
 
 #Check if running as admin
 if not ctypes.windll.shell32.IsUserAnAdmin():
@@ -55,15 +65,15 @@ def remove_edge():
     remove_webview = webview_var.get()
 
     #Edge
-    if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
+    if os.path.exists(os.path.join(PROGRAM_FILES_X86, "\Microsoft\Edge\Application\pwahelper.exe")): # C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe
         cmd = [src, "--uninstall", "--system-level", "--force-uninstall"]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         # Check if pwahelper.exe remains after uninstallation
         time.sleep(3)
-        if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
+        if os.path.exists(os.path.join(PROGRAM_FILES_X86, "\Microsoft\Edge\Application\pwahelper.exe")):
             # Wait 3 more seconds
             time.sleep(3)
-            if os.path.exists(r"C:\Program Files (x86)\Microsoft\Edge\Application\pwahelper.exe"):
+            if os.path.exists(os.path.join(PROGRAM_FILES_X86, "\Microsoft\Edge\Application\pwahelper.exe")):
                 output_terminal.insert(END, " Uninstall Failed!\n", "red")
                 root.update()
             else:
@@ -79,14 +89,14 @@ def remove_edge():
 ######################################################################################################################################
 
     #Edge Update  *Does not always work
-    if os.path.exists(r"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe"):
+    if os.path.exists(os.path.join(PROGRAM_FILES_X86, "\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe")): # C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe
         command = [src, '--uninstall', '--system-level', '--force-uninstall']
         subprocess.run(command, shell=True)
         time.sleep(3)
     else:
         pass
-
-    subprocess.run('rmdir /q /s "C:\\ProgramData\\Microsoft\\EdgeUpdate"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    BUFFER_edge_update = os.path.join(PROGRAM_DATA, "Microsoft", "EdgeUpdate") # buffer for path forming
+    subprocess.run(f'rmdir /q /s "{edge_update_path}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 ######################################################################################################################################
 
@@ -94,7 +104,7 @@ def remove_edge():
     if remove_webview:
         output_terminal.insert(END, "Removing WebView\n")
         root.update()
-        webview_folder_path = r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"
+        webview_folder_path = os.path.join(PROGRAM_FILES_X86, "Microsoft\\EdgeWebView\\Application") # r"C:\Program Files (x86)\Microsoft\EdgeWebView\Application"
         if os.path.exists(webview_folder_path):
             cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
