@@ -1,4 +1,4 @@
-@echo off
+@echo off & setlocal
 
 REM
 REM Download setup.exe from Repo
@@ -9,25 +9,25 @@ REM Remove APPX
 REM
 
 REM #Admin Permissions
-net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
+net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit /b 1)
 title Edge Remover - 6/16/2025
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
 
 set "onHashErr=download"
 
 set "fileSetup=%~dp0setup.exe"
-if exist "%fileSetup%" goto file_check;
+if exist "%fileSetup%" goto file_check
 set "fileSetup=%tmp%\setup.exe"
-if exist "%fileSetup%" goto file_check;
+if exist "%fileSetup%" goto file_check
 
 :file_download
 set "onHashErr=error"
 ipconfig | find "IPv" >NUL
-if %errorlevel% neq 0 echo. & echo You are not connected to a network ! & echo. & pause & exit
+if %errorlevel% neq 0 echo. & echo You are not connected to a network ! & echo. & pause & exit /b 2
 
 echo - Downloading Required File
 powershell -Command "try { (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe', '%fileSetup%') } catch { Write-Host 'Error downloading the file.' }"
-if not exist "%fileSetup%" echo File download failed. Check your internet connection & echo & pause & exit
+if not exist "%fileSetup%" echo File download failed. Check your internet connection & echo & pause & exit /b 2
 
 :file_check
 powershell -Command "Import-Module Microsoft.PowerShell.Utility; exit ((Get-FileHash '%fileSetup%' -Algorithm SHA256).Hash.ToLower() -ne '%expected%')"
@@ -35,7 +35,7 @@ if %errorlevel% neq 0 goto file_%onHashErr%
 echo. & goto uninst_edge
 
 :file_error
-echo File hash does not match the expected value. & echo. & pause & exit
+echo File hash does not match the expected value. & echo. & pause & exit /b 3
 
 
 REM #Edge
@@ -54,7 +54,7 @@ start /w "" "%fileSetup%" --uninstall --msedgewebview --system-level --force-uni
 REM Delete empty folders
 :cleanup_wv_junk
 REM rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
-for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebView" 2^>NUL ^| sort /r') do rd "%%d" 2>NUL
+for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebView" 2^>NUL ^| sort /r') do rd "%%~d" 2>NUL
 
 
 REM #Additional Files
@@ -89,14 +89,14 @@ exit /b 0
 :users_done
 
 REM System32
-if exist "%SystemRoot%\System32\MicrosoftEdgeCP.exe" (
-for /f "delims=" %%a in ('dir /b "%SystemRoot%\System32\MicrosoftEdge*"') do (
- takeown /f "%SystemRoot%\System32\%%a" >NUL 2>&1
- icacls "%SystemRoot%\System32\%%a" /inheritance:e /grant "%UserName%:(OI)(CI)F" /T /C >NUL 2>&1
- del /S /Q "%SystemRoot%\System32\%%a" >NUL 2>&1))
+if exist "%SystemRoot%\System32\MicrosoftEdge*.exe" (
+for /f "delims=" %%a in ('dir /b "%SystemRoot%\System32\MicrosoftEdge*.exe"') do (
+ takeown /f "%SystemRoot%\System32\%%~a" >NUL 2>&1
+ icacls "%SystemRoot%\System32\%%~a" /inheritance:e /grant "%UserName%:(OI)(CI)F" /T /C >NUL 2>&1
+ del /S /Q "%SystemRoot%\System32\%%~a" >NUL 2>&1))
 
 REM Folders
-taskkill /im MicrosoftEdgeUpdate.exe /f >NUL 2>&1
+taskkill /im MicrosoftEdgeUpdate.exe /f /t >NUL 2>&1
 rd /s /q "%ProgramFiles(x86)%\Microsoft\Edge" >NUL 2>&1
 rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeCore" >NUL 2>&1
 rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeUpdate" >NUL 2>&1
@@ -111,7 +111,7 @@ reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-
 reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
 
 REM Tasks - Files
-for /r "%SystemRoot%\System32\Tasks" %%f in (*MicrosoftEdge*) do del "%%f" >NUL 2>&1
+for /r "%SystemRoot%\System32\Tasks" %%f in (*MicrosoftEdge*) do del "%%~f" >NUL 2>&1
 
 REM Tasks - Name
 for /f "skip=1 tokens=1 delims=," %%a in ('schtasks /query /fo csv') do (
@@ -147,9 +147,9 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUs
 
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
- takeown /f "%%d" /r /d y >NUL 2>&1
- icacls "%%d" /grant administrators:F /t >NUL 2>&1
- rd /s /q "%%d" >NUL 2>&1)
+ takeown /f "%%~d" /r /d y >NUL 2>&1
+ icacls "%%~d" /grant administrators:F /t >NUL 2>&1
+ rd /s /q "%%~d" >NUL 2>&1)
 
 REM Malformed Keys
 echo - Fixing Registry

@@ -1,7 +1,7 @@
-@echo off
+@echo off & setlocal
 
 REM #Admin Permissions
-net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit)
+net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit /b 1)
 title Edge Remover - 2/18/2025
 
 
@@ -23,6 +23,6 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUs
 
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
- takeown /f "%%d" /r /d y >NUL 2>&1
- icacls "%%d" /grant administrators:F /t >NUL 2>&1
- rd /s /q "%%d" >NUL 2>&1)
+ takeown /f "%%~d" /r /d y >NUL 2>&1
+ icacls "%%~d" /grant administrators:F /t >NUL 2>&1
+ rd /s /q "%%~d" >NUL 2>&1)
