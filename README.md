@@ -18,10 +18,10 @@ Flag - Remove-Edge.exe
 - ImageGlass
 - Lenovo USB Recovery Creator Tool
 - Microsoft Photos App (Edit)
+- PowerToys File Explorer add-ons utility
 - Quicken
 - Windows Mail  
 - Xbox App
-- PowerToys File Explorer add-ons utility
 ```
 
 **EXE Version**  
