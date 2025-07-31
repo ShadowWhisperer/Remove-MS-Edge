@@ -24,7 +24,7 @@ if len(sys.argv) > 1:
         print("\n")
         sys.exit()
 else:
-    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/07/2025 - ShadowWhisperer")
+    ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 5/31/2025 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -33,21 +33,21 @@ def hide_console():
     return startupinfo
 
 # Set Paths
-src = os.path.join(sys._MEIPASS, "setup.exe")
-PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")
-PROGRAM_FILES = os.environ.get("ProgramFiles", r"C:\\Program Files")
-SYSTEM_ROOT = os.environ.get("SystemRoot", r"C:\\Windows")
-PROGRAM_DATA = os.environ.get("ProgramData", r"C:\\ProgramData")
+src = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(__file__)), "setup.exe")
+PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")
+PROGRAM_FILES = os.environ.get("ProgramFiles", "C:\\Program Files")
+SYSTEM_ROOT = os.environ.get("SystemRoot", "C:\\Windows")
+PROGRAM_DATA = os.environ.get("ProgramData", "C:\\ProgramData")
 
 # Get user profiles
-with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
+with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
     user_profiles = [winreg.EnumKey(key, i) for i in range(winreg.QueryInfoKey(key)[0])]
     USERS_DIR = [winreg.QueryValueEx(winreg.OpenKey(key, profile), "ProfileImagePath")[0] for profile in user_profiles]
 
 ################################################################################################################################################
 
 # Edge
-EDGE_PATH = os.path.join(PROGRAM_FILES_X86, r"Microsoft\\Edge\\Application\\pwahelper.exe")
+EDGE_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\Edge\\Application\\pwahelper.exe")
 if os.path.exists(EDGE_PATH):
     if not silent_mode:
         print("Removing Microsoft Edge")
@@ -56,7 +56,7 @@ if os.path.exists(EDGE_PATH):
     os.system("timeout /t 2 >nul")
 
 # WebView
-EDGE_PATH = os.path.join(PROGRAM_FILES_X86, r"Microsoft\\EdgeWebView\\Application")
+EDGE_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\EdgeWebView\\Application")
 if os.path.exists(EDGE_PATH):
     if not silent_mode:
         print("Removing WebView")
@@ -70,7 +70,7 @@ edge_apps = [app.strip() for app in output.decode().strip().split('\r\n') if app
 for app in edge_apps:
     if 'MicrosoftEdgeDevTools' in app:
         continue
-    base_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
+    base_path = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore"
     for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
         winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_WRITE | winreg.KEY_WOW64_64KEY)
 
@@ -105,12 +105,15 @@ def clean_subkeys(root, path):
     except:
         pass
 
-clean_subkeys(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore")
+clean_subkeys(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore")
 
 ################################################################################################################################################
 
 # Startup - Active Setup
-subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+try:
+    winreg.DeleteKeyEx(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Active Setup\\Installed Components\\{9459C573-B17A-45AE-9F64-1857B5D58CEE}", access=winreg.KEY_WOW64_64KEY)
+except FileNotFoundError:
+    pass
 
 # Desktop Icons
 for user_dir in USERS_DIR:
@@ -144,8 +147,13 @@ for root, dirs, files in os.walk(TASKS_PATH):
 service_names = ["edgeupdate", "edgeupdatem"]
 for name in service_names:
     if subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console()).returncode == 0:
-        subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdate', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(['reg', 'delete', r'HKLM\SYSTEM\CurrentControlSet\Services\edgeupdatem', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for reg_key in ["SYSTEM\\CurrentControlSet\\Services\\edgeupdate", "SYSTEM\\CurrentControlSet\\Services\\edgeupdatem"]:
+            try:
+                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_key, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_64KEY) as key:
+                    pass
+                winreg.DeleteKeyEx(winreg.HKEY_LOCAL_MACHINE, reg_key, access=winreg.KEY_WOW64_64KEY)
+            except Exception:
+                pass
 
 # Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
 SYSTEM_APPS_PATH = os.path.join(SYSTEM_ROOT, "SystemApps")
@@ -155,14 +163,17 @@ for folder in next(os.walk(SYSTEM_APPS_PATH))[1]:
 
 # System32 Files
 user_name = getpass.getuser()
-for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")): # "C:\\Windows\\System32"
+for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
     if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
         subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
         os.remove(f.path)
 
 # Remaining Edge Keys
-subprocess.run(['reg', 'delete', r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge', '/f'], startupinfo=hide_console(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+try:
+    winreg.DeleteKeyEx(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\Edge", access=winreg.KEY_WOW64_64KEY)
+except FileNotFoundError:
+    pass
 
 # Folders - C:\Program Files (x86)\Microsoft
 subprocess.run(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
