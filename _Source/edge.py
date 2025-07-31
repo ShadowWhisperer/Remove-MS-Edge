@@ -155,7 +155,7 @@ for folder in next(os.walk(SYSTEM_APPS_PATH))[1]:
 
 # System32 Files
 user_name = getpass.getuser()
-for f in os.scandir("C:\\Windows\\System32"):
+for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")): # "C:\\Windows\\System32"
     if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
         subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
