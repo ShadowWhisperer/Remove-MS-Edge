@@ -8,11 +8,12 @@ REM Remove Extras
 REM Remove APPX
 REM
 
+title Edge Remover - 6/16/2025
+
 REM #Admin Permissions
 net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit /b 1)
-title Edge Remover - 6/16/2025
-set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
 
+set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
 set "onHashErr=download"
 
 set "fileSetup=%~dp0setup.exe"
@@ -70,12 +71,12 @@ for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*
 goto users_done
 
 :user_rem_lnks_by_sid
-if "%1"=="S-1-5-18" goto user_end
-if "%1"=="S-1-5-19" goto user_end
-if "%1"=="S-1-5-20" goto user_end
+if "%1" equ "S-1-5-18" goto user_end
+if "%1" equ "S-1-5-19" goto user_end
+if "%1" equ "S-1-5-20" goto user_end
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
 	call :user_rem_lnks_by_path %%d
-	if "%UserProfile%"=="%%d" set "USER_SID=%1"
+	if "%UserProfile%" equ "%%d" set "USER_SID=%1"
 )
 goto user_end
 
@@ -90,10 +91,12 @@ exit /b 0
 
 REM System32
 if exist "%SystemRoot%\System32\MicrosoftEdge*.exe" (
-for /f "delims=" %%a in ('dir /b "%SystemRoot%\System32\MicrosoftEdge*.exe"') do (
- takeown /f "%SystemRoot%\System32\%%~a" >NUL 2>&1
- icacls "%SystemRoot%\System32\%%~a" /inheritance:e /grant "%UserName%:(OI)(CI)F" /T /C >NUL 2>&1
- del /S /Q "%SystemRoot%\System32\%%~a" >NUL 2>&1))
+	for /f "delims=" %%a in ('dir /b "%SystemRoot%\System32\MicrosoftEdge*.exe"') do (
+		takeown /f "%SystemRoot%\System32\%%~a" >NUL 2>&1
+		icacls "%SystemRoot%\System32\%%~a" /inheritance:e /grant "%UserName%:(OI)(CI)F" /T /C >NUL 2>&1
+		del /S /Q "%SystemRoot%\System32\%%~a" >NUL 2>&1
+	)
+)
 
 REM Folders
 taskkill /im MicrosoftEdgeUpdate.exe /f /t >NUL 2>&1
@@ -113,17 +116,19 @@ reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
 REM Tasks - Files
 for /r "%SystemRoot%\System32\Tasks" %%f in (*MicrosoftEdge*) do del "%%~f" >NUL 2>&1
 
-REM Tasks - Name
+REM Tasks - Scheduler
 for /f "skip=1 tokens=1 delims=," %%a in ('schtasks /query /fo csv') do (
-for %%b in (%%a) do (
- if "%%b"=="MicrosoftEdge" schtasks /delete /tn "%%~a" /f >NUL 2>&1))
+	for %%b in (%%a) do (
+		if "%%b" equ "MicrosoftEdge" schtasks /delete /tn "%%~a" /f >NUL 2>&1
+	)
+)
 
 REM Update Services
 set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
 for %%n in (%service_names%) do (
- sc stop %%n >NUL 2>&1
- sc delete %%n >NUL 2>&1
- reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%%n" /f >NUL 2>&1
+	sc stop %%n >NUL 2>&1
+	sc delete %%n >NUL 2>&1
+	reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%%n" /f >NUL 2>&1
 )
 
 
@@ -136,46 +141,47 @@ for /f "delims=" %%a in ('powershell "(New-Object System.Security.Principal.NTAc
 :rem_appX
 set "REG_APPX_STORE=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PackageFullName -like '*microsoftedge*' } | Select-Object -ExpandProperty PackageFullName"') do (
-    if not "%%a"=="" (
-        reg add "%REG_APPX_STORE%\EndOfLife\%USER_SID%\%%a" /f >NUL 2>&1
-        reg add "%REG_APPX_STORE%\EndOfLife\S-1-5-18\%%a" /f >NUL 2>&1
-        reg add "%REG_APPX_STORE%\Deprovisioned\%%a" /f >NUL 2>&1
-        powershell -Command "Remove-AppxPackage -Package '%%a'" 2>NUL
-        powershell -Command "Remove-AppxPackage -Package '%%a' -AllUsers" 2>NUL
-    )
+	if "%%a" neq "" (
+		reg add "%REG_APPX_STORE%\EndOfLife\%USER_SID%\%%a" /f >NUL 2>&1
+		reg add "%REG_APPX_STORE%\EndOfLife\S-1-5-18\%%a" /f >NUL 2>&1
+		reg add "%REG_APPX_STORE%\Deprovisioned\%%a" /f >NUL 2>&1
+		powershell -Command "Remove-AppxPackage -Package '%%a'" 2>NUL
+		powershell -Command "Remove-AppxPackage -Package '%%a' -AllUsers" 2>NUL
+	)
 )
 
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
- takeown /f "%%~d" /r /d y >NUL 2>&1
- icacls "%%~d" /grant administrators:F /t >NUL 2>&1
- rd /s /q "%%~d" >NUL 2>&1)
+	takeown /f "%%~d" /r /d y >NUL 2>&1
+	icacls "%%~d" /grant administrators:F /t >NUL 2>&1
+	rd /s /q "%%~d" >NUL 2>&1
+)
 
 REM Malformed Keys
 echo - Fixing Registry
 setlocal EnableDelayedExpansion
 set "reg_path=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
-for /f "tokens=*" %%k in ('reg query "%reg_path%" /s 2^>nul ^| findstr /b /i "%reg_path%"') do (
-    set "full_key=%%k"
-    set "delete_key=false"
-    set "reason="
-    for %%a in ("!full_key!") do set "key_name=%%~nxa"
-    :: Skip empty or unchanged names
-    if "!key_name!"=="" (
-        set "reason=empty key name"
-    ) else if "!key_name!"=="!full_key!" (
-        set "reason=key name same as full path"
-    ) else (
-        :: Check for space
-        set "spaced_key=!key_name: =!"
-        if not "!key_name!"=="!spaced_key!" (
-            set "delete_key=true"
-        ) else (
-            :: Check for letters
-            echo /7 - !key_name! | findstr /r /c:"[a-zA-Z]" >nul
-            if !errorlevel! neq 0 set "delete_key=true"
-        )
-    )
-    if "!delete_key!"=="true" reg delete "!full_key!" /f >nul 2>&1
+for /f "tokens=*" %%k in ('reg query "%reg_path%" /s 2^>NUL ^| findstr /b /i "%reg_path%"') do (
+	set "full_key=%%k"
+	set "delete_key=false"
+	set "reason="
+	for %%a in ("!full_key!") do set "key_name=%%~nxa"
+	REM Skip empty or unchanged names
+	if "!key_name!"=="" (
+		set "reason=empty key name"
+	) else if "!key_name!"=="!full_key!" (
+		set "reason=key name same as full path"
+	) else (
+		REM Check for space
+		set "spaced_key=!key_name: =!"
+		if not "!key_name!"=="!spaced_key!" (
+			set "delete_key=true"
+		) else (
+			REM Check for letters
+			echo /7 - !key_name! | findstr /r /c:"[a-zA-Z]" >NUL
+			if !errorlevel! neq 0 set "delete_key=true"
+		)
+	)
+	if "!delete_key!"=="true" reg delete "!full_key!" /f >nul 2>&1
 )
 endlocal
