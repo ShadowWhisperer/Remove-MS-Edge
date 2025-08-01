@@ -25,9 +25,10 @@ Flag - Remove-Edge.exe
 ```
 
 **EXE Version**  
-[Remove-Edge.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-Edge.exe?raw=true) - Removes Edge only, leaves WebView alone.  
-[Remove-EdgeWeb.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-EdgeWeb.exe?raw=true) - Removes Edge and WebView  
-[Remove-NoTerm.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Remove-NoTerm.exe?raw=true) - Remove Edges only. Completely silent, no terminal, no flags. Useful for Task Schedular.  
+
+[Edge Only](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe)  
+[No Terminal](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeTerm.exe) Remove only edge with no terminal. Useful for Task Schedular.  
+[Edge + WebView ](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeWeb.exe)  
 
 <br>  
 
@@ -43,6 +44,8 @@ The batch scripts have been enhanced by @XakerTwo
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
 [Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge and Appx version of Edge only.  
 [Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) - Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
+
+<br>  
 
 The batch version requires an internet connection to download a file.  
 To make it work without internet, download [setup.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/setup.exe?raw=true), from _Source and keep it next to the .bat
