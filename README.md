@@ -23,7 +23,7 @@
 **EXE Version**  
 
 [Edge Only](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe)  
-[No Terminal](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeTerm.exe) - Remove only edge with no terminal. Useful for Task Schedular.  
+[No Terminal](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeTerm.exe) - Edge only, with no terminal. Useful for Task Scheduler  
 [Edge + WebView ](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeWeb.exe)  
 
 <br>  
