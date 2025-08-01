@@ -33,21 +33,19 @@
 
 <br>
 
-**Batch Version**  (Requires internet or file from _Source)  
-
-The batch scripts have been enhanced by @XakerTwo  
+**Batch Version**
 
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
 [Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge and Appx version of Edge only.  
 [Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) - Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
 
-<br>  
+To use batch offline, download [setup.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/setup.exe?raw=true), from _Source and keep it next to the .bat
 
-The batch version requires an internet connection to download a file.  
-To make it work without internet, download [setup.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/setup.exe?raw=true), from _Source and keep it next to the .bat
+<br>
 
-Re-Install Edge: [Small DL](https://www.microsoft.com/en-us/edge/download?form=MA13FJ)  /  [Full DL](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
-Re-Install Webview: [Link](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)  
+**Additional Files**  
 
-Fix Windows Updates issues: [Bash](https://raw.githubusercontent.com/ShadowWhisperer/Fix-WinUpdates/refs/heads/main/Fix%20Updates.bat)  
-<br>  
+Install [Edge](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
+Install [WebView](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)  
+
+Fix Update issues: [Batch Script](https://raw.githubusercontent.com/ShadowWhisperer/Fix-WinUpdates/refs/heads/main/Fix%20Updates.bat)  
