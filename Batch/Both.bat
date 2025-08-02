@@ -96,12 +96,10 @@ exit /b 0
 :users_done
 
 REM System32
-if exist "%SystemRoot%\System32\MicrosoftEdge*.exe" (
-	for /f "delims=" %%a in ('dir /b "%SystemRoot%\System32\MicrosoftEdge*.exe"') do (
-		takeown /f "%SystemRoot%\System32\%%~a" >NUL 2>&1
-		icacls "%SystemRoot%\System32\%%~a" /inheritance:e /grant "%UserName%:(OI)(CI)F" /T /C >NUL 2>&1
-		del /S /Q "%SystemRoot%\System32\%%~a" >NUL 2>&1
-	)
+for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
+	takeown /f "%%~f" >NUL 2>&1
+	icacls "%%~f" /grant "%UserName%:F" /c >NUL 2>&1
+	del /q "%%~f" >NUL 2>&1
 )
 
 REM Folders
@@ -159,7 +157,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUs
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
 	takeown /f "%%~d" /r /d y >NUL 2>&1
-	icacls "%%~d" /grant administrators:F /t >NUL 2>&1
+	icacls "%%~d" /grant "%UserName%:F" /t /c >NUL 2>&1
 	rd /s /q "%%~d" >NUL 2>&1
 )
 
