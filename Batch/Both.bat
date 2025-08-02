@@ -65,8 +65,8 @@ REM Desktop icon
 echo - Removing Additional Files
 
 set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path %%d )
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_lnks_remove_by_path %%d )
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path "%%~d" )
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_lnks_remove_by_path "%%~d" )
 for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_lnks_remove_by_sid %%k )
 goto users_done
 
@@ -75,14 +75,20 @@ if "%1" equ "S-1-5-18" goto user_lnks_remove_end
 if "%1" equ "S-1-5-19" goto user_lnks_remove_end
 if "%1" equ "S-1-5-20" goto user_lnks_remove_end
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
-	call :user_lnks_remove_by_path %%d
-	if "%UserProfile%" equ "%%d" set "USER_SID=%1"
+	call :user_lnks_remove_by_path "%%~d"
+	if "%UserProfile%" equ "%%~d" set "USER_SID=%1"
 )
 goto user_lnks_remove_end
 
 :user_lnks_remove_by_path
-del /s /q "%1\Desktop\edge.lnk" >NUL 2>&1
-del /s /q "%1\Desktop\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\Desktop\edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\edge.lnk" >NUL 2>&1
+del /q "%~1\Desktop\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" >NUL 2>&1
 
 :user_lnks_remove_end
 exit /b 0
