@@ -117,15 +117,22 @@ REM Registry
 reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" /f >NUL 2>&1
 reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
 
-REM Tasks - Files
-for /r "%SystemRoot%\System32\Tasks" %%f in (*MicrosoftEdge*) do del "%%~f" >NUL 2>&1
+REM Update Tasks
+for /f "tokens=1 delims=," %%n in ('schtasks /query /fo csv') do ( call :task_remove "%%~n" )
+goto tasks_done
 
-REM Tasks - Scheduler
-for /f "skip=1 tokens=1 delims=," %%a in ('schtasks /query /fo csv') do (
-	for %%b in (%%a) do (
-		if "%%b" equ "MicrosoftEdge" schtasks /delete /tn "%%~a" /f >NUL 2>&1
-	)
-)
+:task_remove
+set "task_name=%~1"
+if "%task_name:~0,1%" neq "\" goto task_remove_end
+if "%task_name:\MicrosoftEdge=%" equ "%task_name%" goto task_remove_end
+schtasks /end /tn "%task_name%" >NUL 2>&1
+schtasks /delete /tn "%task_name%" /f >NUL 2>&1
+del "%SystemRoot%\System32\Tasks%task_name%" >NUL 2>&1
+
+:task_remove_end
+exit /b 0
+
+:tasks_done
 
 REM Update Services
 set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
