@@ -33,27 +33,28 @@ if not exist "%fileSetup%" echo File download failed. Check your internet connec
 :file_check
 powershell -Command "Import-Module Microsoft.PowerShell.Utility; exit ((Get-FileHash '%fileSetup%' -Algorithm SHA256).Hash.ToLower() -ne '%expected%')"
 if %errorlevel% neq 0 goto file_%onHashErr%
-echo. & goto uninst_edge
+echo. & goto file_done
 
 :file_error
 echo File hash does not match the expected value. & echo. & pause & exit /b 3
 
+:file_done
+
 
 REM #Edge
-:uninst_edge
 echo - Removing Edge
 where /q "%ProgramFiles(x86)%\Microsoft\Edge\Application:*"
 if %errorlevel% equ 0 start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
 
 
 REM #WebView
-:uninst_wv
 echo - Removing WebView
 where /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application:*"
-if %errorlevel% neq 0 goto cleanup_wv_junk
+if %errorlevel% neq 0 goto uninst_wv_done
 start /w "" "%fileSetup%" --uninstall --msedgewebview --system-level --force-uninstall
+:uninst_wv_done
+
 REM Delete empty folders
-:cleanup_wv_junk
 REM rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
 for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebView" 2^>NUL ^| sort /r') do rd "%%~d" 2>NUL
 
@@ -61,30 +62,29 @@ for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebVi
 REM #Additional Files
 
 REM Desktop icon
-:users_cleanup
 echo - Removing Additional Files
 
 set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_rem_lnks_by_path %%d )
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_rem_lnks_by_path %%d )
-for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_rem_lnks_by_sid %%k )
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path %%d )
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_lnks_remove_by_path %%d )
+for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_lnks_remove_by_sid %%k )
 goto users_done
 
-:user_rem_lnks_by_sid
-if "%1" equ "S-1-5-18" goto user_end
-if "%1" equ "S-1-5-19" goto user_end
-if "%1" equ "S-1-5-20" goto user_end
+:user_lnks_remove_by_sid
+if "%1" equ "S-1-5-18" goto user_lnks_remove_end
+if "%1" equ "S-1-5-19" goto user_lnks_remove_end
+if "%1" equ "S-1-5-20" goto user_lnks_remove_end
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
-	call :user_rem_lnks_by_path %%d
+	call :user_lnks_remove_by_path %%d
 	if "%UserProfile%" equ "%%d" set "USER_SID=%1"
 )
-goto user_end
+goto user_lnks_remove_end
 
-:user_rem_lnks_by_path
+:user_lnks_remove_by_path
 del /s /q "%1\Desktop\edge.lnk" >NUL 2>&1
 del /s /q "%1\Desktop\Microsoft Edge.lnk" >NUL 2>&1
 
-:user_end
+:user_lnks_remove_end
 exit /b 0
 
 :users_done
@@ -135,10 +135,10 @@ for %%n in (%service_names%) do (
 REM #APPX
 echo - Removing APPX
 
-if defined USER_SID goto rem_appX
+if defined USER_SID goto usid_done
 for /f "delims=" %%a in ('powershell "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"') do set "USER_SID=%%a"
+:usid_done
 
-:rem_appX
 set "REG_APPX_STORE=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PackageFullName -like '*microsoftedge*' } | Select-Object -ExpandProperty PackageFullName"') do (
 	if "%%a" neq "" (
