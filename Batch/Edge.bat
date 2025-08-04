@@ -155,6 +155,12 @@ for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
 	icacls "%%~d" /grant "%UserName%:F" /t /c >NUL 2>&1
 	rd /s /q "%%~d" >NUL 2>&1
 )
+REM %ProgramFiles%\WindowsApps\Microsoft.MicrosoftEdge*
+for /d %%d in ("%ProgramFiles%\WindowsApps\Microsoft.MicrosoftEdge*") do (
+	takeown /f "%%~d" /r /d y >NUL 2>&1
+	icacls "%%~d" /grant "%UserName%:F" /t /c >NUL 2>&1
+	rd /s /q "%%~d" >NUL 2>&1
+)
 
 REM Malformed Keys
 echo - Fixing Registry
