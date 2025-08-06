@@ -169,22 +169,69 @@ for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
 
 
 # Registry
+
+
+##############
+#  Denied
+##############
+# AppUserModelId
+# SOFTWARE\Microsoft\Windows\CurrentVersion\AppModel\StateRepository\Cache\Package\Index\PackageFullName
+# SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId
+
 def delete_keys(hive, key, access):
     try:
-        with winreg.OpenKey(hive, key, 0, access) as k:
+        with winreg.OpenKey(hive, key, 0, access | winreg.KEY_READ) as k:
             while True:
                 try:
-                    delete_keys(hive, f"{key}\\{winreg.EnumKey(k, 0)}", access)
+                    subkey = winreg.EnumKey(k, 0)
+                    delete_keys(hive, f"{key}\\{subkey}", access)
                 except OSError:
                     break
         winreg.DeleteKeyEx(hive, key, access)
     except FileNotFoundError:
         pass
-    except: pass
+    except PermissionError:
+        pass
+    except Exception as e:
+        pass
 
-# HKCU
-def delete_hkcu_keys():
-    hkcu_paths = [
+def delete_subkeys_with_prefix(hive, path, prefix, access):
+    try:
+        with winreg.OpenKey(hive, path, 0, access | winreg.KEY_READ) as k:
+            i = 0
+            while True:
+                try:
+                    subkey = winreg.EnumKey(k, i)
+                    if re.match(prefix, subkey):
+                        delete_keys(hive, f"{path}\\{subkey}", access)
+                    else:
+                        i += 1
+                except OSError:
+                    break
+    except FileNotFoundError:
+        pass
+    except PermissionError:
+        pass
+    except Exception as e:
+        pass
+
+def hive_name(hive):
+    return {
+        winreg.HKEY_CURRENT_USER: "HKCU",
+        winreg.HKEY_LOCAL_MACHINE: "HKLM",
+        winreg.HKEY_CLASSES_ROOT: "HKCR"
+    }.get(hive, str(hive))
+
+def delete_registry_keys():
+    wildcard_paths = [
+        "ActivatableClasses\\Package",
+        "Extensions\\ContractId\\windows.appExecutionAlias\\PackageId",
+        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppContainer\\Storage",
+        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\PackageRepository\\Packages",
+        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\PolicyCache",
+        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\Repository\\Families",
+        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\Repository\\Packages",
+        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.AppService\\PackageId",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.BackgroundTasks\\PackageId",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.CommandLineLaunch\\PackageId",
@@ -193,57 +240,82 @@ def delete_hkcu_keys():
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.Launch\\PackageId",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.PreInstalledConfigTask\\PackageId",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.Protocol\\PackageId",
+        "SOFTWARE\\Microsoft\\SecurityManager\\CapAuthz\\ApplicationsEx",
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppHost\\IndexedDB",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Applications",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Config",
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\Capabilities\\microphone\\Apps",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\Capabilities\\userAccountInformation\\Apps",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\Capabilities\\webcam\\Apps",
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\cellularData",
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\microphone",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\picturesLibrary",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\userAccountInformation",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\webcam",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\wifiData",
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PushNotifications\\Backup",
-        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\BackgroundModel\\PreInstallTasks\\RequireReschedule"
+        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\BackgroundModel\\PreInstallTasks\\RequireReschedule",
+        "SYSTEM\\Setup\\Upgrade\\Appx\\DownlevelGather\\AppxAllUserStore\\Config",
+        "SYSTEM\\Setup\\Upgrade\\Appx\\DownlevelGather\\AppxAllUserStore\\InboxApplications",
+        "SYSTEM\\Setup\\Upgrade\\Appx\\DownlevelGather\\PackageInstallState"
     ]
-    for path in hkcu_paths:
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as k:
-                i = 0
-                while True:
-                    try:
-                        n = winreg.EnumKey(k, i)
-                        if re.match(r"^Microsoft\.MicrosoftEdge", n):
-                            delete_keys(winreg.HKEY_CURRENT_USER, f"{path}\\{n}", winreg.KEY_ALL_ACCESS)
-                        else:
-                            i += 1
-                    except: break
-        except: pass
 
-# HKLM
-def delete_hklm_keys():
-    hklm_paths = [
-        "SYSTEM\\CurrentControlSet\\Services\\edgeupdate",
-        "SYSTEM\\CurrentControlSet\\Services\\edgeupdatem",
-        "SYSTEM\\CurrentControlSet\\Services\\MicrosoftEdgeElevationService",
-        "SOFTWARE\\WOW6432Node\\Microsoft\\Edge",
-        "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate",
+    full_delete_paths = [
+        "AppID\\MicrosoftEdgeUpdate.exe",
+        "SOFTWARE\\Classes\\microsoft-edge",
+        "SOFTWARE\\Classes\\microsoft-edge-holographic",
         "SOFTWARE\\Microsoft\\Active Setup\\Installed Components\\{9459C573-B17A-45AE-9F64-1857B5D58CEE}",
         "SOFTWARE\\Microsoft\\Edge",
         "SOFTWARE\\Microsoft\\EdgeUpdate",
         "SOFTWARE\\Microsoft\\Internet Explorer\\EdgeDebugActivation",
         "SOFTWARE\\Microsoft\\Internet Explorer\\EdgeIntegration",
-        "SOFTWARE\\Classes\\microsoft-edge-holographic",
-        "SOFTWARE\\Classes\\microsoft-edge",
-        "SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\microsoft-edge-holographic",
+        "SOFTWARE\\Microsoft\\MicrosoftEdge",
+        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\MicrosoftEdgeUpdate.exe",
         "SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\microsoft-edge",
-        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\MicrosoftEdgeUpdate.exe"
+        "SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\microsoft-edge-holographic",
+        "SOFTWARE\\WOW6432Node\\Microsoft\\Edge",
+        "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate",
+        "SYSTEM\\CurrentControlSet\\Services\\edgeupdate",
+        "SYSTEM\\CurrentControlSet\\Services\\edgeupdatem",
+        "SYSTEM\\CurrentControlSet\\Services\\MicrosoftEdgeElevationService"
     ]
-    for path in hklm_paths:
-        for access in [winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY]:
-            delete_keys(winreg.HKEY_LOCAL_MACHINE, path, access | winreg.KEY_ALL_ACCESS)
 
-# HKCR
-def delete_hkcr_keys():
-    hkcr_paths = ["microsoft-edge", "microsoft-edge-holographic"]
-    for path in hkcr_paths:
-        for access in [winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY]:
-            delete_keys(winreg.HKEY_CLASSES_ROOT, path, access | winreg.KEY_ALL_ACCESS)
+    hives = [winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CLASSES_ROOT]
 
-delete_hkcu_keys()
-delete_hklm_keys()
-delete_hkcr_keys()
+    # Wildcard deletions - Microsoft.MicrosoftEdge
+    for path in wildcard_paths:
+        for hive in hives:
+            for access in [winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY]:
+                delete_subkeys_with_prefix(hive, path, r"(?i)^microsoft\.microsoftedge.*", access)
+
+    # Full path deletions
+    for path in full_delete_paths:
+        for hive in hives:
+            for access in [winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY]:
+                delete_keys(hive, path, access)
+
+delete_registry_keys()
+
+#HKEY_CLASSES_ROOT\MicrosoftEdg*
+def delete_hkcr_microsoftedge_keys():
+    for hive in [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]:
+        base_path = r"Software\Classes"
+        for access in [winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY]:
+            try:
+                with winreg.OpenKey(hive, base_path, 0, access | winreg.KEY_READ) as root:
+                    i = 0
+                    while True:
+                        try:
+                            key_name = winreg.EnumKey(root, i)
+                            if key_name.startswith(("MicrosoftEdge", "microsoft-edge")):
+                                delete_keys(hive, f"{base_path}\\{key_name}", access | winreg.KEY_ALL_ACCESS)
+                            else:
+                                i += 1
+                        except OSError:
+                            break
+            except:
+                pass
+
+delete_hkcr_microsoftedge_keys()
