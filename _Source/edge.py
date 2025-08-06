@@ -2,6 +2,7 @@ import ctypes      # Check if ran as an admin / Window title
 import getpass     # Take Permissions
 import os          # System OS paths
 import sys         # Check if ran as an admin / silent flag
+import shutil      # Folder deletion
 import subprocess  # Run setup.exe file
 import winreg      # Modify Windows Registry (Remove Edge Appx Packages)
 import re          # Regular expression for subkey name validation
@@ -122,30 +123,46 @@ for root, dirs, files in os.walk(TASKS_PATH):
             file_path = os.path.join(root, file)
             os.remove(file_path)
 
-# Edge Update Services
+# Edge Services
 service_names = ["edgeupdate", "edgeupdatem", "MicrosoftEdgeElevationService"]
 for name in service_names:
     subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console())
 
-# Folders - C:\Windows\SystemApps\Microsoft.MicrosoftEdge*
-SYSTEM_APPS_PATH = os.path.join(SYSTEM_ROOT, "SystemApps")
-for folder in next(os.walk(SYSTEM_APPS_PATH))[1]:
-    if folder.startswith("Microsoft.MicrosoftEdge"):
-        subprocess.run(f'takeown /f "{os.path.join(SYSTEM_APPS_PATH, folder)}" /r /d y && icacls "{os.path.join(SYSTEM_APPS_PATH, folder)}" /grant administrators:F /t && rd /s /q "{os.path.join(SYSTEM_APPS_PATH, folder)}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# Folders
+# - C:\Windows\SystemApps\
+# - C:\Program Files\WindowsApps\
+# - C:\Program Files (x86)\Microsoft\
+def run_cmd(cmd):
+    subprocess.run(cmd, check=False, creationflags=subprocess.CREATE_NO_WINDOW, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-# System32 Files
+def remove_directory(path):
+    if os.path.exists(path):
+        commands = [
+            ['takeown', '/F', path, '/R', '/D', 'Y'],
+            ['icacls', path, '/grant', 'BUILTIN\\Administrators:(F)', '/T'],
+            ['icacls', path, '/grant', 'Everyone:(F)', '/T']
+        ]
+        for cmd in commands:
+            run_cmd(cmd)
+        shutil.rmtree(path, ignore_errors=True)
+
+for root_dir in [os.path.join(SYSTEM_ROOT, "SystemApps"), os.path.join(PROGRAM_FILES, "WindowsApps")]:
+    if os.path.exists(root_dir):
+        for folder_name in os.listdir(root_dir):
+            if folder_name.startswith('Microsoft.MicrosoftEdge'):
+                remove_directory(os.path.join(root_dir, folder_name))
+
+    run_cmd(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"])
+    for folder in ["Edge", "EdgeCore", "EdgeUpdate", "Temp"]:
+        remove_directory(os.path.join(PROGRAM_FILES_X86, "Microsoft", folder))
+
+# Files - System32
 user_name = getpass.getuser()
 for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
     if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
         subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
         os.remove(f.path)
-
-# Folders - C:\Program Files (x86)\Microsoft
-subprocess.run(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-for folder in ["Edge", "EdgeCore", "EdgeUpdate", "Temp"]:
-    folder_path = os.path.join(PROGRAM_FILES_X86, "Microsoft", folder)
-    subprocess.run(['rmdir', '/q', '/s', folder_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 # Registry - Recursive
 def delete_key_recursive(hive, key, access):
