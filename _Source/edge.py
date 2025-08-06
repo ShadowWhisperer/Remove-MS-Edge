@@ -1,7 +1,7 @@
 import ctypes      # Check if ran as an admin / Window title
 import getpass     # Take Permissions
 import os          # System OS paths
-import sys         # Check if ran as an admin / silent flag
+import sys         # Check if ran as an admin
 import shutil      # Folder deletion
 import subprocess  # Run setup.exe file
 import winreg      # Modify Windows Registry (Remove Edge Appx Packages)
@@ -164,19 +164,57 @@ for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
         subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
         os.remove(f.path)
 
-# Registry - Recursive
-def delete_key_recursive(hive, key, access):
+
+################################################################################################################################################
+
+
+# Registry
+def delete_keys(hive, key, access):
     try:
         with winreg.OpenKey(hive, key, 0, access) as k:
             while True:
                 try:
-                    delete_key_recursive(hive, f"{key}\\{winreg.EnumKey(k, 0)}", access)
+                    delete_keys(hive, f"{key}\\{winreg.EnumKey(k, 0)}", access)
                 except OSError:
                     break
         winreg.DeleteKeyEx(hive, key, access)
     except FileNotFoundError:
         pass
+    except: pass
 
+# HKCU
+def delete_hkcu_keys():
+    hkcu_paths = [
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.AppService\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.BackgroundTasks\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.CommandLineLaunch\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.ComponentUI\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.File\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.Launch\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.PreInstalledConfigTask\\PackageId",
+        "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.Protocol\\PackageId",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppHost\\IndexedDB",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\cellularData",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location",
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PushNotifications\\Backup",
+        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\BackgroundModel\\PreInstallTasks\\RequireReschedule"
+    ]
+    for path in hkcu_paths:
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as k:
+                i = 0
+                while True:
+                    try:
+                        n = winreg.EnumKey(k, i)
+                        if re.match(r"^Microsoft\.MicrosoftEdge", n):
+                            delete_keys(winreg.HKEY_CURRENT_USER, f"{path}\\{n}", winreg.KEY_ALL_ACCESS)
+                        else:
+                            i += 1
+                    except: break
+        except: pass
+
+# HKLM
 def delete_hklm_keys():
     hklm_paths = [
         "SYSTEM\\CurrentControlSet\\Services\\edgeupdate",
@@ -195,24 +233,17 @@ def delete_hklm_keys():
         "SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\microsoft-edge",
         "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\MicrosoftEdgeUpdate.exe"
     ]
-
     for path in hklm_paths:
         for access in [winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY]:
-            delete_key_recursive(winreg.HKEY_LOCAL_MACHINE, path, access | winreg.KEY_ALL_ACCESS)
+            delete_keys(winreg.HKEY_LOCAL_MACHINE, path, access | winreg.KEY_ALL_ACCESS)
 
-def delete_hkcr_edge_keys():
-    access = winreg.KEY_ALL_ACCESS
-    with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, "", 0, access) as root:
-        index = 0
-        while True:
-            try:
-                subkey = winreg.EnumKey(root, index)
-                if subkey.lower().startswith("microsoftedge"):
-                    delete_key_recursive(winreg.HKEY_CLASSES_ROOT, subkey, access)
-                else:
-                    index += 1
-            except OSError:
-                break
+# HKCR
+def delete_hkcr_keys():
+    hkcr_paths = ["microsoft-edge", "microsoft-edge-holographic"]
+    for path in hkcr_paths:
+        for access in [winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY]:
+            delete_keys(winreg.HKEY_CLASSES_ROOT, path, access | winreg.KEY_ALL_ACCESS)
 
+delete_hkcu_keys()
 delete_hklm_keys()
-delete_hkcr_edge_keys()
+delete_hkcr_keys()
