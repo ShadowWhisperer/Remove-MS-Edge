@@ -29,6 +29,10 @@ PROGRAM_FILES = os.environ.get("ProgramFiles", "C:\\Program Files")
 SYSTEM_ROOT = os.environ.get("SystemRoot", "C:\\Windows")
 PROGRAM_DATA = os.environ.get("ProgramData", "C:\\ProgramData")
 
+# 32 or 64bit
+is_64bit_windows = "ProgramFiles(x86)" in os.environ
+access_flag = winreg.KEY_WRITE | (winreg.KEY_WOW64_64KEY if is_64bit_windows else 0)
+
 # Get user profiles
 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
     user_profiles = [winreg.EnumKey(key, i) for i in range(winreg.QueryInfoKey(key)[0])]
@@ -51,14 +55,15 @@ if os.path.exists(EDGE_PATH):
     cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
     subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
 
-# Edge (Appx Packages)
+# Edge / MicrosoftEdgeDevTools (Appx Packages)
 user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
-output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*microsoftedge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
+output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -ilike "*MicrosoftEdge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
 edge_apps = [app.strip() for app in output.decode().strip().split('\r\n') if app.strip()]
+base_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for app in edge_apps:
-    base_path = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore"
     for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
-        winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_WRITE | winreg.KEY_WOW64_32KEY)
+        winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, access=access_flag)
+
 
 ################################################################################################################################################
 
@@ -68,19 +73,19 @@ def should_delete(name):
 
 def delete_tree(root, path):
     try:
-        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_32KEY) as key:
+        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | access_flag) as key:
             while True:
                 try:
                     delete_tree(root, f"{path}\\{winreg.EnumKey(key, 0)}")
                 except OSError:
                     break
-        winreg.DeleteKeyEx(root, path, access=winreg.KEY_WOW64_32KEY)
+        winreg.DeleteKeyEx(root, path, access=access_flag)
     except:
         pass
 
 def clean_subkeys(root, path):
     try:
-        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | winreg.KEY_WOW64_32KEY) as key:
+        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | access_flag) as key:
             for i in range(winreg.QueryInfoKey(key)[0]):
                 subkey = winreg.EnumKey(key, i)
                 subkey_path = f"{path}\\{subkey}"
@@ -145,11 +150,14 @@ def remove_directory(path):
         for cmd in commands:
             run_cmd(cmd)
         shutil.rmtree(path, ignore_errors=True)
+        # C:\Windows\SystemApps\Microsoft.MicrosoftEdgeDevToolsClient* - would not delete with shutil
+        if os.path.exists(path):
+            run_cmd(['cmd.exe', '/c', 'rd', '/s', '/q', path])
 
 for root_dir in [os.path.join(SYSTEM_ROOT, "SystemApps"), os.path.join(PROGRAM_FILES, "WindowsApps")]:
     if os.path.exists(root_dir):
         for folder_name in os.listdir(root_dir):
-            if folder_name.startswith('Microsoft.MicrosoftEdge'):
+            if folder_name.startswith(('Microsoft.MicrosoftEdge', 'Microsoft.MicrosoftEdgeDevToolsClient')):
                 remove_directory(os.path.join(root_dir, folder_name))
 
     run_cmd(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"])
@@ -298,7 +306,7 @@ def delete_registry_keys():
 
 delete_registry_keys()
 
-#HKEY_CLASSES_ROOT\MicrosoftEdg*
+#HKEY_CLASSES_ROOT\MicrosoftEdge*
 def delete_hkcr_microsoftedge_keys():
     for hive in [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]:
         base_path = r"Software\Classes"
