@@ -107,7 +107,7 @@ for %%b in (%%a) do (
  if "%%b"=="MicrosoftEdge" schtasks /delete /tn "%%~a" /f >NUL 2>&1))
 
 REM Update Services
-set "service_names=edgeupdate edgeupdatem"
+set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
 for %%n in (%service_names%) do (
  sc stop %%n >NUL 2>&1
  sc delete %%n >NUL 2>&1
