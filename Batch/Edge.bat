@@ -144,6 +144,15 @@ REM Registry
 reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" /f >NUL 2>&1
 reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
 
+set "reg_HKLM_keys_del="
+REM Keys for TakeOwn+FullControl and deleting, max length after batch vars expanding - 8167(8191 - 24; 24 - "set "reg_HKLM_keys_del="")
+REM delimiter is \\ (see Both.bat for details)
+set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.BCHostServer"
+set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.ContentProcessServer"
+set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.F12Server"
+
+call :reg_HKLM_keys_access_and_delete
+
 REM System32
 for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
 	takeown /f "%%~f" >NUL 2>&1
@@ -223,4 +232,43 @@ del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft E
 del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" >NUL 2>&1
 
 :_user_lnks_remove_end
+exit /b 0
+
+REM PowerShell(psl) based functions, psl code passed via stdin
+REM see Both.bat for details
+
+REM get access and delete registry keys in HKLM hive
+REM keys for TakeOwn+FullControl ONLY should be in reg_HKLM_keys_acs var
+REM keys that also should be deleted - in reg_HKLM_keys_del var
+REM DO NOT pass keys with values at tails
+:reg_HKLM_keys_access_and_delete
+if defined reg_HKLM_keys_acs goto _reg_HKLM_keys_access_and_delete_psl
+if not defined reg_HKLM_keys_del goto _reg_HKLM_keys_access_and_delete_end
+:_reg_HKLM_keys_access_and_delete_psl
+echo ;^
+if ($env:reg_HKLM_keys_acs) { $key_paths_acs = $env:reg_HKLM_keys_acs.Trim().Split([string[]]"\\", [StringSplitOptions]::RemoveEmptyEntries) }^
+if ($env:reg_HKLM_keys_del) { $key_paths_del = $env:reg_HKLM_keys_del.Trim().Split([string[]]"\\", [StringSplitOptions]::RemoveEmptyEntries) }^
+$key_paths_acs += $key_paths_del;^
+if (!$key_paths_acs) { exit }^
+$user_ident = [System.Security.Principal.NTAccount]$env:UserName;^
+$access_rule = [System.Security.AccessControl.RegistryAccessRule]::new($user_ident, 0xF003F, 3, 0, 0);^
+$hive_HKLM = [Microsoft.Win32.Registry]::LocalMachine;^
+$ntdll = Add-Type -Member '[DllImport("ntdll.dll")] public static extern int RtlAdjustPrivilege(ulong p, bool e, bool t, ref bool l);' -Name NtDll -PassThru;^
+$lp = 0; $ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp);^
+;^
+foreach ($key_path in $key_paths_acs) {^
+	$key_obj = $hive_HKLM.OpenSubKey($key_path, 2, 0x80000);^
+	if (!$key_obj) { continue };^
+	^
+	($acl = $key_obj.GetAccessControl()).SetOwner($user_ident);^
+	$key_obj.SetAccessControl($acl);^
+	$acl.AddAccessRule($access_rule);^
+	$key_obj.SetAccessControl($acl);^
+	$key_obj.Close();^
+}^
+foreach ($key_path in $key_paths_del) { $hive_HKLM.DeleteSubKeyTree($key_path, 0); }^
+$ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]0);^
+;| powershell -noprofile - 
+
+:_reg_HKLM_keys_access_and_delete_end
 exit /b 0
