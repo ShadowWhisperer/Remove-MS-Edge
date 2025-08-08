@@ -1,6 +1,7 @@
 @echo off & setlocal
 
 REM
+REM Check permissions and elevate if required
 REM Download setup.exe from Repo
 REM Check download / HASH
 REM Remove Edge
@@ -12,8 +13,34 @@ REM
 
 title Edge Remover - 6/16/2025
 
-REM #Admin Permissions
-net session >NUL 2>&1 || (echo. & echo Run Script As Admin & echo. & pause & exit /b 1)
+REM Get executor SID (Win 2003(XP x64) and up)
+for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "USER_SID=%%~b"
+REM Check Admin permissions
+net session >NUL 2>&1
+if %errorlevel% equ 0 goto is_admin_done
+REM When UAC disabled, elevation not works
+if "%USER_SID%" equ "%~1" echo Please, enable UAC and try again & echo. & pause & exit /b 1
+REM Elevate with psl (slow as hell; don't try go around cmd /c)
+powershell -noprofile -c Start-Process -Verb RunAs "\"`\"%COMSpec%`\"\" \"/c `\"`\"%~0`\" `\"%USER_SID%`\"`\"\""
+exit /b %errorlevel%
+:is_admin_done
+
+REM Admin permissions granted, executor SID is admin SID
+set "ADMIN_SID=%USER_SID%"
+REM When script elevates itself, the user SID should be passed as 1st argument
+if "%~1" neq "" goto usid_set
+REM User use Admin account or elevates script by hands
+choice /c yn /n /m "Logged as Admin? [Y,N]"
+REM Check for positive answer, anything else considered as No
+if %errorlevel% equ 1 goto usid_done
+echo Please, run script without elevation & echo. & pause & exit /b 1
+
+:usid_set
+REM bad input here is not my fault
+set "USER_SID=%~1"
+
+:usid_done
+
 
 set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
 set "onHashErr=download"
@@ -53,18 +80,13 @@ start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
 
 
 echo - Removing AppX
-
-if defined USER_SID goto usid_done
-for /f "delims=" %%a in ('powershell "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"') do set "USER_SID=%%a"
-:usid_done
-
 set "REG_APPX_STORE=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PackageFullName -like '*microsoftedge*' } | Select-Object -ExpandProperty PackageFullName"') do (
 	if "%%a" neq "" (
 		reg add "%REG_APPX_STORE%\EndOfLife\%USER_SID%\%%a" /f >NUL 2>&1
 		reg add "%REG_APPX_STORE%\EndOfLife\S-1-5-18\%%a" /f >NUL 2>&1
 		reg add "%REG_APPX_STORE%\Deprovisioned\%%a" /f >NUL 2>&1
-		powershell -Command "Remove-AppxPackage -Package '%%a'" 2>NUL
+		powershell -Command "Remove-AppxPackage -Package '%%a' -User '%USER_SID%'" 2>NUL
 		powershell -Command "Remove-AppxPackage -Package '%%a' -AllUsers" 2>NUL
 	)
 )
@@ -186,10 +208,7 @@ REM retrieve location of user profile by user SID and call shortcuts removing
 if "%1" equ "S-1-5-18" goto _user_lnks_remove_end
 if "%1" equ "S-1-5-19" goto _user_lnks_remove_end
 if "%1" equ "S-1-5-20" goto _user_lnks_remove_end
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
-	call :user_lnks_remove_by_path "%%~d"
-	if "%UserProfile%"=="%%~d" set "USER_SID=%1"
-)
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do ( call :user_lnks_remove_by_path "%%~d" )
 goto _user_lnks_remove_end
 
 REM remove shortcuts from several locations of user profile
