@@ -4,8 +4,12 @@ REM
 REM Download setup.exe from Repo
 REM Check download / HASH
 REM Remove Edge
+REM Remove WebView
+REM Remove AppX
+REM Remove Edge remains
+REM Remove WebView remains
+REM Remove AppX remains
 REM Remove Extras
-REM Remove APPX
 REM
 
 title Edge Remover - 6/16/2025
@@ -41,110 +45,23 @@ echo File hash does not match the expected value. & echo. & pause & exit /b 3
 :file_done
 
 
-REM #Edge
+REM #Uninstall
 echo - Removing Edge
 where /q "%ProgramFiles(x86)%\Microsoft\Edge\Application:*"
-if %errorlevel% equ 0 start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
+if %errorlevel% neq 0 goto uninstall_edge_done
+taskkill /im MicrosoftEdgeUpdate.exe /f /t >NUL 2>&1
+start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall
+:uninstall_edge_done
 
 
-REM #WebView
 echo - Removing WebView
 where /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application:*"
-if %errorlevel% neq 0 goto uninst_wv_done
+if %errorlevel% neq 0 goto uninstall_wv_done
 start /w "" "%fileSetup%" --uninstall --msedgewebview --system-level --force-uninstall
-:uninst_wv_done
-
-REM Delete empty folders
-REM rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
-for /f "delims=" %%d in ('dir /ad /b /s "%ProgramFiles(x86)%\Microsoft\EdgeWebView" 2^>NUL ^| sort /r') do rd "%%~d" 2>NUL
+:uninstall_wv_done
 
 
-REM #Additional Files
-
-REM Desktop icon
-echo - Removing Additional Files
-
-set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path "%%~d" )
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_lnks_remove_by_path "%%~d" )
-for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_lnks_remove_by_sid %%k )
-goto users_done
-
-:user_lnks_remove_by_sid
-if "%1" equ "S-1-5-18" goto user_lnks_remove_end
-if "%1" equ "S-1-5-19" goto user_lnks_remove_end
-if "%1" equ "S-1-5-20" goto user_lnks_remove_end
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
-	call :user_lnks_remove_by_path "%%~d"
-	if "%UserProfile%" equ "%%~d" set "USER_SID=%1"
-)
-goto user_lnks_remove_end
-
-:user_lnks_remove_by_path
-del /q "%~1\Desktop\edge.lnk" >NUL 2>&1
-del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\edge.lnk" >NUL 2>&1
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\edge.lnk" >NUL 2>&1
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\edge.lnk" >NUL 2>&1
-del /q "%~1\Desktop\Microsoft Edge.lnk" >NUL 2>&1
-del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" >NUL 2>&1
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" >NUL 2>&1
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" >NUL 2>&1
-
-:user_lnks_remove_end
-exit /b 0
-
-:users_done
-
-REM System32
-for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
-	takeown /f "%%~f" >NUL 2>&1
-	icacls "%%~f" /grant "%UserName%:F" /c >NUL 2>&1
-	del /q "%%~f" >NUL 2>&1
-)
-
-REM Folders
-taskkill /im MicrosoftEdgeUpdate.exe /f /t >NUL 2>&1
-rd /s /q "%ProgramFiles(x86)%\Microsoft\Edge" >NUL 2>&1
-rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeCore" >NUL 2>&1
-rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeUpdate" >NUL 2>&1
-rd /s /q "%ProgramFiles(x86)%\Microsoft\Temp" >NUL 2>&1
-rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" >NUL 2>&1
-
-REM Files
-del /s /q "%AllUsersProfile%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" >NUL 2>&1
-
-REM Registry
-reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" /f >NUL 2>&1
-reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
-
-REM Update Tasks
-for /f "tokens=1 delims=," %%n in ('schtasks /query /fo csv') do ( call :task_remove "%%~n" )
-goto tasks_done
-
-:task_remove
-set "task_name=%~1"
-if "%task_name:~0,1%" neq "\" goto task_remove_end
-if "%task_name:\MicrosoftEdge=%" equ "%task_name%" goto task_remove_end
-schtasks /end /tn "%task_name%" >NUL 2>&1
-schtasks /delete /tn "%task_name%" /f >NUL 2>&1
-del "%SystemRoot%\System32\Tasks%task_name%" >NUL 2>&1
-
-:task_remove_end
-exit /b 0
-
-:tasks_done
-
-REM Update Services
-set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
-for %%n in (%service_names%) do (
-	sc stop %%n >NUL 2>&1
-	sc delete %%n >NUL 2>&1
-	reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%%n" /f >NUL 2>&1
-)
-
-
-REM #APPX
-echo - Removing APPX
+echo - Removing AppX
 
 if defined USER_SID goto usid_done
 for /f "delims=" %%a in ('powershell "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"') do set "USER_SID=%%a"
@@ -161,6 +78,43 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUs
 	)
 )
 
+
+
+REM #Cleanup
+echo - Cleaning Edge remains
+REM Delete Edge empty folders
+rd /s /q "%ProgramFiles(x86)%\Microsoft\Edge" >NUL 2>&1
+rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeCore" >NUL 2>&1
+rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeUpdate" >NUL 2>&1
+rd /s /q "%ProgramFiles(x86)%\Microsoft\Temp" >NUL 2>&1
+rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" >NUL 2>&1
+
+REM Delete Edge Update Tasks
+for /f "tokens=1 delims=," %%n in ('schtasks /query /fo csv') do ( call :task_remove "%%~n" )
+
+REM Delete Edge Update Services
+set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
+for %%n in (%service_names%) do (
+	sc stop %%n >NUL 2>&1
+	sc delete %%n >NUL 2>&1
+	reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%%n" /f >NUL 2>&1
+)
+
+REM Delete Desktop, StartMenu and TaskBar shortcuts
+set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path "%%~d" )
+del /q "%AllUsersProfile%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" >NUL 2>&1
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_lnks_remove_by_path "%%~d" )
+for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_lnks_remove_by_sid %%k )
+
+
+echo - Cleaning WebView remains
+REM Delete WebView empty folders
+rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" >NUL 2>&1
+
+
+echo - Cleaning AppX remains
+REM Delete remained packges
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
 	takeown /f "%%~d" /r /d y >NUL 2>&1
@@ -173,6 +127,22 @@ for /d %%d in ("%ProgramFiles%\WindowsApps\Microsoft.MicrosoftEdge*") do (
 	icacls "%%~d" /grant "%UserName%:F" /t /c >NUL 2>&1
 	rd /s /q "%%~d" >NUL 2>&1
 )
+
+
+
+REM #Additional Data
+echo - Removing additional data
+REM Registry
+reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
+
+REM System32
+for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
+	takeown /f "%%~f" >NUL 2>&1
+	icacls "%%~f" /grant "%UserName%:F" /c >NUL 2>&1
+	del /q "%%~f" >NUL 2>&1
+)
+
 
 REM Malformed Keys
 echo - Fixing Registry
@@ -202,3 +172,50 @@ for /f "tokens=*" %%k in ('reg query "%reg_path%" /s 2^>NUL ^| findstr /b /i "%r
 	if "!delete_key!"=="true" reg delete "!full_key!" /f >nul 2>&1
 )
 endlocal
+
+
+
+REM Main script end
+exit /b 0
+
+
+REM functions
+REM labels, starts with underscore( _ ), are for internal usage and should not be called from main script
+REM labels, starts with regular symbol, are public functions and can be called from main script
+
+REM remove task by name
+:task_remove
+set "task_name=%~1"
+if "%task_name:~0,1%" neq "\" goto _task_remove_end
+if "%task_name:\MicrosoftEdge=%" equ "%task_name%" goto _task_remove_end
+schtasks /end /tn "%task_name%" >NUL 2>&1
+schtasks /delete /tn "%task_name%" /f >NUL 2>&1
+del "%SystemRoot%\System32\Tasks%task_name%" >NUL 2>&1
+
+:_task_remove_end
+exit /b 0
+
+REM retrieve location of user profile by user SID and call shortcuts removing
+:user_lnks_remove_by_sid
+if "%1" equ "S-1-5-18" goto _user_lnks_remove_end
+if "%1" equ "S-1-5-19" goto _user_lnks_remove_end
+if "%1" equ "S-1-5-20" goto _user_lnks_remove_end
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do (
+	call :user_lnks_remove_by_path "%%~d"
+	if "%UserProfile%"=="%%~d" set "USER_SID=%1"
+)
+goto _user_lnks_remove_end
+
+REM remove shortcuts from several locations of user profile
+:user_lnks_remove_by_path
+del /q "%~1\Desktop\edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\edge.lnk" >NUL 2>&1
+del /q "%~1\Desktop\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" >NUL 2>&1
+del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" >NUL 2>&1
+
+:_user_lnks_remove_end
+exit /b 0
