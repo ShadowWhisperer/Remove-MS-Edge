@@ -14,7 +14,7 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
     sys.exit(1)
 
 # Title
-ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/06/2025 - ShadowWhisperer")
+ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/09/2025 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -176,15 +176,14 @@ for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
 ################################################################################################################################################
 
 
-# Registry
-
-
 ##############
 #  Denied
 ##############
 # AppUserModelId
 # SOFTWARE\Microsoft\Windows\CurrentVersion\AppModel\StateRepository\Cache\Package\Index\PackageFullName
 # SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId
+# Software\Microsoft\\Windows\\CurrentVersion\\AppModel\Repository\Families
+# Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages
 
 def delete_keys(hive, key, access):
     try:
@@ -237,8 +236,6 @@ def delete_registry_keys():
         "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppContainer\\Storage",
         "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\PackageRepository\\Packages",
         "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\PolicyCache",
-        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\Repository\\Families",
-        "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\Repository\\Packages",
         "Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.AppService\\PackageId",
         "SOFTWARE\\Classes\\Extensions\\ContractId\\Windows.BackgroundTasks\\PackageId",
@@ -309,7 +306,7 @@ delete_registry_keys()
 #HKEY_CLASSES_ROOT\MicrosoftEdge*
 def delete_hkcr_microsoftedge_keys():
     for hive in [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]:
-        base_path = r"Software\Classes"
+        base_path = "Software\\Classes"
         for access in [winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY]:
             try:
                 with winreg.OpenKey(hive, base_path, 0, access | winreg.KEY_READ) as root:
