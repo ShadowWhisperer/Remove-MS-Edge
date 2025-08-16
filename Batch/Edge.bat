@@ -113,16 +113,19 @@ for %%n in (%service_names%) do (
 	reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%%n" /f >NUL 2>&1
 )
 
-REM Delete Desktop, StartMenu and TaskBar shortcuts
+REM Delete Desktop, StartMenu and TaskBar shortcuts; cleanup user registry
 set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path "%%~d" )
 del /q "%AllUsersProfile%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" >NUL 2>&1
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do ( call :user_lnks_remove_by_path "%%~d" )
-for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_lnks_remove_by_sid %%k )
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do (
+	call :user_lnks_remove_by_path "%%~d"
+	call :user_reg_cleanup .DEFAULT "%%~d"
+)
+for /f "skip=1 tokens=7 delims=\" %%k in ('reg query "%REG_USERS_PATH%" /k /f "*"') do ( call :user_cleanup_by_sid %%k )
 
 
 echo - Cleaning AppX remains
-REM Delete remained packges
+REM Delete remained packages
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
 	takeown /f "%%~d" /r /d y >NUL 2>&1
@@ -141,12 +144,24 @@ for /d %%d in ("%ProgramFiles%\WindowsApps\Microsoft.MicrosoftEdge*") do (
 REM #Additional Data
 echo - Removing additional data
 REM Registry
+reg delete "HKLM\SOFTWARE\Classes\AppID\MicrosoftEdgeUpdate.exe" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Classes\AppID\{1FCBE96C-1697-43AF-9140-2897C7C69767}" /f >NUL 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Edge" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\EdgeUpdate" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\MicrosoftEdge" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MicrosoftEdgeUpdate.exe" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Internet Explorer\EdgeDebugActivation" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Internet Explorer\EdgeIntegration" /f >NUL 2>&1
 reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate" /f >NUL 2>&1
+reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\MicrosoftEdge" /f >NUL 2>&1
 
 set "reg_HKLM_keys_del="
 REM Keys for TakeOwn+FullControl and deleting, max length after batch vars expanding - 8167(8191 - 24; 24 - "set "reg_HKLM_keys_del="")
 REM delimiter is \\ (see Both.bat for details)
+set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\Windows\CurrentVersion\MicrosoftEdge"
+set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\MicrosoftEdge"
 set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.BCHostServer"
 set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.ContentProcessServer"
 set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.F12Server"
@@ -212,13 +227,19 @@ del "%SystemRoot%\System32\Tasks%task_name%" >NUL 2>&1
 :_task_remove_end
 exit /b 0
 
-REM retrieve location of user profile by user SID and call shortcuts removing
-:user_lnks_remove_by_sid
-if "%1" equ "S-1-5-18" goto _user_lnks_remove_end
-if "%1" equ "S-1-5-19" goto _user_lnks_remove_end
-if "%1" equ "S-1-5-20" goto _user_lnks_remove_end
-for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do ( call :user_lnks_remove_by_path "%%~d" )
-goto _user_lnks_remove_end
+REM retrieve location of user profile by user SID
+REM call shortcuts removing
+REM call cleanup of user registry
+:user_cleanup_by_sid
+if "%1" equ "S-1-5-18" goto _user_cleanup_by_sid_end
+if "%1" equ "S-1-5-19" goto _user_cleanup_by_sid_end
+if "%1" equ "S-1-5-20" goto _user_cleanup_by_sid_end
+for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do ( set "profile_path=%%~d" )
+call :user_lnks_remove_by_path "%profile_path%"
+call :user_reg_cleanup %1 "%profile_path%"
+
+:_user_cleanup_by_sid_end
+exit /b 0
 
 REM remove shortcuts from several locations of user profile
 :user_lnks_remove_by_path
@@ -231,7 +252,51 @@ del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Edge
 del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk" >NUL 2>&1
 del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk" >NUL 2>&1
 
-:_user_lnks_remove_end
+exit /b 0
+
+REM remove some registry keys
+REM arguments: user SID and user profile dir path in this exact order
+:user_reg_cleanup
+reg query "HKU\%1" /ve >NUL 2>&1
+if %errorlevel% neq 0 reg load "HKU\%1" "%~2\NTUSER.DAT" >NUL 2>&1
+if %errorlevel% neq 0 goto _user_reg_cleanup_cls
+
+reg delete "HKU\%1\SOFTWARE\Microsoft\Edge" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\EdgeUpdate" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\MicrosoftEdge" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MicrosoftEdgeUpdate.exe" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\Internet Explorer\EdgeDebugActivation" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\Internet Explorer\EdgeIntegration" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\WOW6432Node\Microsoft\Edge" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\WOW6432Node\Microsoft\MicrosoftEdge" /f >NUL 2>&1
+
+reg delete "HKU\%1\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\microsoft-edge" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\microsoft-edge-holographic" /f >NUL 2>&1
+
+REM for current user require explorer restart
+reg delete "HKU\%1\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "FavoritesRemovedChanges" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "FavoritesVersion" /f >NUL 2>&1
+reg delete "HKU\%1\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "FavoritesChanges" /f >NUL 2>&1
+
+:_user_reg_cleanup_cls
+REM see Both.bat for details
+set "cls_path=%1\SOFTWARE\Classes"
+reg query "HKU\%cls_path%" /ve >NUL 2>&1
+if %errorlevel% equ 0 goto _user_reg_cleanup_cls_ready
+
+set "cls_path=%1_Classes"
+reg query "HKU\%cls_path%" /ve >NUL 2>&1
+REM location of user classes hive can be altered by user
+if %errorlevel% neq 0 reg load "HKU\%cls_path%" "%~2\AppData\Local\Microsoft\Windows\UsrClass.dat" >NUL 2>&1
+if %errorlevel% neq 0 goto _user_reg_cleanup_end
+
+:_user_reg_cleanup_cls_ready
+
+reg delete "HKU\%cls_path%\microsoft-edge" /f >NUL 2>&1
+reg delete "HKU\%cls_path%\microsoft-edge-holographic" /f >NUL 2>&1
+
+:_user_reg_cleanup_end
 exit /b 0
 
 REM PowerShell(psl) based functions, psl code passed via stdin
@@ -240,7 +305,7 @@ REM see Both.bat for details
 REM get access and delete registry keys in HKLM hive
 REM keys for TakeOwn+FullControl ONLY should be in reg_HKLM_keys_acs var
 REM keys that also should be deleted - in reg_HKLM_keys_del var
-REM DO NOT pass keys with values at tails
+REM DO NOT pass keys with values at tail
 :reg_HKLM_keys_access_and_delete
 if defined reg_HKLM_keys_acs goto _reg_HKLM_keys_access_and_delete_psl
 if not defined reg_HKLM_keys_del goto _reg_HKLM_keys_access_and_delete_end

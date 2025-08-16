@@ -53,7 +53,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUs
 
 
 
-REM Delete remained packges
+REM Delete remained packages
 echo - Cleaning AppX remains
 REM %SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*
 for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
