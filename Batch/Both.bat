@@ -138,7 +138,7 @@ for %%n in (%service_names%) do (
 REM Delete Desktop, StartMenu and TaskBar shortcuts; cleanup user registry
 set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path "%%~d" %bat_log% )
-del /q "%AllUsersProfile%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" %bat_log%
+del /f /q "%AllUsersProfile%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" %bat_log%
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do (
 	call :user_lnks_remove_by_path "%%~d" %bat_log%
 	call :user_reg_cleanup .DEFAULT "%%~d" %bat_log%
@@ -199,7 +199,7 @@ REM System32
 for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
 	takeown /f "%%~f" %bat_log%
 	icacls "%%~f" /grant "%UserName%:F" /c %bat_log%
-	del /q "%%~f" %bat_log%
+	del /f /q "%%~f" %bat_log%
 )
 
 
@@ -278,7 +278,7 @@ if "%task_name:~0,1%" neq "\" goto _task_remove.end
 if "%task_name:\MicrosoftEdge=%" equ "%task_name%" goto _task_remove.end
 schtasks /end /tn "%task_name%"
 schtasks /delete /tn "%task_name%" /f
-del "%SystemRoot%\System32\Tasks%task_name%"
+del /f /q "%SystemRoot%\System32\Tasks%task_name%"
 
 :_task_remove.end
 exit /b 0
@@ -300,14 +300,14 @@ exit /b 0
 
 REM remove shortcuts from several locations of user profile
 :user_lnks_remove_by_path
-del /q "%~1\Desktop\edge.lnk"
-del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\edge.lnk"
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\edge.lnk"
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\edge.lnk"
-del /q "%~1\Desktop\Microsoft Edge.lnk"
-del /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk"
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk"
-del /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk"
+del /f /q "%~1\Desktop\edge.lnk"
+del /f /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\edge.lnk"
+del /f /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\edge.lnk"
+del /f /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\edge.lnk"
+del /f /q "%~1\Desktop\Microsoft Edge.lnk"
+del /f /q "%~1\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk"
+del /f /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk"
+del /f /q "%~1\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Microsoft Edge.lnk"
 
 exit /b 0
 
