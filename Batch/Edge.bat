@@ -2,8 +2,7 @@
 
 REM
 REM Check permissions and elevate if required
-REM Download setup.exe from Repo
-REM Check download / HASH
+REM Obtain required files (from cache or from repo with hash validation)
 REM Remove Edge
 REM Remove AppX
 REM Remove Edge remains
@@ -54,32 +53,18 @@ set "USER_SID=%~1"
 
 
 
-set "expected=4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"
-set "onHashErr=download"
-
-set "fileSetup=%~dp0setup.exe"
-if exist "%fileSetup%" goto file.check
-set "fileSetup=%tmp%\setup.exe"
-if exist "%fileSetup%" goto file.check
-
-:file.download
-set "onHashErr=error"
+set "has_net=0"
 ipconfig | find "IPv" >NUL 2>&1
-if %errorlevel% neq 0 echo. & echo You are not connected to a network ! & echo. & pause & exit /b %ISSUE_NETWORK%
+if %errorlevel% equ 0 set "has_net=1"
 
-echo - Downloading Required File
-powershell -Command "try { (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe', '%fileSetup%') } catch { Write-Host 'Error downloading the file.' }"
-if not exist "%fileSetup%" echo File download failed. Check your internet connection & echo & pause & exit /b %ISSUE_DOWNLOAD%
-
-:file.check
-powershell -Command "Import-Module Microsoft.PowerShell.Utility; exit ((Get-FileHash '%fileSetup%' -Algorithm SHA256).Hash.ToLower() -ne '%expected%')"
-if %errorlevel% neq 0 goto file.%onHashErr%
-echo. & goto file.done
-
-:file.error
-echo File hash does not match the expected value. & echo. & pause & exit /b %ISSUE_HASH%
-
-:file.done
+echo - Obtaining required files
+call :file_obtain^
+ "setup.exe"^
+ "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
+ "file_setup"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
 
 
@@ -88,7 +73,7 @@ echo - Removing Edge
 where "%ProgramFiles(x86)%\Microsoft\Edge\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.edge.done
 taskkill /im MicrosoftEdgeUpdate.exe /f /t %bat_log%
-start /w "" "%fileSetup%" --uninstall --system-level --force-uninstall %bat_log%
+start /w "" "%file_setup%" --uninstall --system-level --force-uninstall %bat_log%
 :uninstall.edge.done
 
 
@@ -251,6 +236,54 @@ timeout /t 1 /nobreak >NUL 2>&1
 REM reset log file if this is not elevation re-run (bad check, cuz someone may pass an argument)
 if "%~1" equ "" echo %~nx0 >"%~dpn0_dbg.log"
 exit /b 0
+
+
+REM check script and %tmp% directories for file, check file hash, (re-)download from URL if required
+REM if file successfully validated its full path will be stored to variable
+REM arguments: file name, file hash, file URL and variable name in this exact order
+REM return result as exit code
+:file_obtain
+if "%~1" equ "" goto _file_obtain.fail
+if "%~2" equ "" goto _file_obtain.fail
+if "%~3" equ "" goto _file_obtain.fail
+if "%~4" equ "" goto _file_obtain.fail
+
+set "on_hash_err=download"
+set "file_path=%~dp0%~1"
+if exist "%file_path%" goto _file_obtain.check
+set "file_path=%tmp%\%~1"
+if exist "%file_path%" goto _file_obtain.check
+
+if %has_net% equ 0 goto _file_obtain.net.fail
+
+:_file_obtain.download
+set "on_hash_err=check.fail"
+powershell -noprofile -c "[Net.WebClient]::new().DownloadFile('%~3', '%file_path%')"
+if %errorlevel% neq 0 goto _file_obtain.download.fail
+if not exist "%file_path%" goto _file_obtain.download.fail
+
+:_file_obtain.check
+powershell -noprofile -c "Import-Module Microsoft.PowerShell.Utility; exit ((Get-FileHash '%file_path%' -Algorithm SHA256).Hash.ToLower() -ne '%~2')"
+if %errorlevel% neq 0 goto _file_obtain.%on_hash_err%
+
+set "%~4=%file_path%"
+exit /b 0
+
+:_file_obtain.fail
+set "errorinfo=%ISSUE_GENERIC%: generic"
+exit /b %ISSUE_GENERIC%
+
+:_file_obtain.net.fail
+set "errorinfo=%ISSUE_NETWORK%: no network"
+exit /b %ISSUE_NETWORK%
+
+:_file_obtain.download.fail
+set "errorinfo=%ISSUE_DOWNLOAD%: download error"
+exit /b %ISSUE_DOWNLOAD%
+
+:_file_obtain.check.fail
+set "errorinfo=%ISSUE_HASH%: hash mismatch"
+exit /b %ISSUE_HASH%
 
 
 REM remove task by name if name match pattern
