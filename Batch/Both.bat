@@ -129,11 +129,7 @@ for /f "tokens=1 delims=," %%n in ('schtasks /query /fo csv') do ( call :task_re
 
 REM Delete Edge Update Services
 set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
-for %%n in (%service_names%) do (
-	sc stop %%n %bat_log%
-	sc delete %%n %bat_log%
-	reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%%n" /f %bat_log%
-)
+for %%n in (%service_names%) do ( call :service_remove "%%~n" %bat_log% )
 
 REM Delete Desktop, StartMenu and TaskBar shortcuts; cleanup user registry
 set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
@@ -281,6 +277,17 @@ schtasks /delete /tn "%task_name%" /f
 del /f /q "%SystemRoot%\System32\Tasks%task_name%"
 
 :_task_remove.end
+exit /b 0
+
+
+REM remove service by name
+:service_remove
+sc stop "%~1"
+if %errorlevel% equ 1060 goto _service_remove.end
+sc delete "%~1"
+reg delete "HKLM\SYSTEM\CurrentControlSet\Services\%~1" /f
+
+:_service_remove.end
 exit /b 0
 
 
