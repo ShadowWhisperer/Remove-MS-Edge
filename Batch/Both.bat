@@ -21,7 +21,7 @@ set "ISSUE_HASH=5"
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 call :log_lvl.debug
 
-title Edge Remover - 6/16/2025
+title Edge Remover - 8/16/2025
 
 
 
@@ -70,6 +70,35 @@ call :file_obtain^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
+REM dll name should not be changed, otherwise "dll not found" error pops out on usage
+REM lazy bypass - script-time post-download hardlink
+if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
+	call :file_obtain^
+	 "System.Data.SQLite.dll"^
+	 "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
+	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
+	 "file_SQLite"^
+	 %bat_log%
+) else (
+	call :file_obtain^
+	 "System.Data.SQLite.dll"^
+	 "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
+	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
+	 "file_SQLite"^
+	 %bat_log%
+)
+if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+
+
+REM Edge uninstalling removes its package as well
+REM but package name required for cleanup, so
+REM query packages by pattern before Edge uninstalling
+set "pkgs_pattern=*microsoftedge*"
+for /f "delims=" %%p in ('powershell -noprofile -c "$pkgs='';foreach($pkg in (Get-AppxPackage -AllUsers).Where({$_.PackageFullName -like $env:pkgs_pattern})){$pkgs+=' '+[int]$pkg.NonRemovable+$pkg.PackageFullName}$pkgs.Trim()"') do (
+	set "pkgs_list=%%~p"
+)
+
 
 
 REM #Uninstall
@@ -89,16 +118,35 @@ start /w "" "%file_setup%" --uninstall --msedgewebview --system-level --force-un
 
 
 echo - Removing AppX
+set "LOC_APPREPO_DB=%AllUsersProfile%\Microsoft\Windows\AppRepository\StateRepository-Machine.srd"
+set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
 set "REG_APPX_STORE=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
-for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PackageFullName -like '*microsoftedge*' } | Select-Object -ExpandProperty PackageFullName"') do (
-	if "%%a" neq "" (
-		reg add "%REG_APPX_STORE%\EndOfLife\%USER_SID%\%%a" /f %bat_log%
-		reg add "%REG_APPX_STORE%\EndOfLife\S-1-5-18\%%a" /f %bat_log%
-		reg add "%REG_APPX_STORE%\Deprovisioned\%%a" /f %bat_log%
-		powershell -Command "Remove-AppxPackage -Package '%%a' -User '%USER_SID%'" %bat_log%
-		powershell -Command "Remove-AppxPackage -Package '%%a' -AllUsers" %bat_log%
-	)
-)
+set "REG32_APPX_STORE=HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
+
+set "reg_SFT_paths_scn="
+set "reg_CLS_paths_scn="
+REM Registry locations for scan and remove appx keys, max length after batch vars expanding - 8167(8191 - 24; 24 - "set "reg_???_paths_scn="")
+REM delimiter is \\, any other chars is allowed in key name; values can contains even backslash
+REM scan is recursive and searches for keys, which names matches two patterns: PackageName_* and *_PublisherId
+
+REM reg_SFT_paths_scn - is only for keys located under HIVE\SOFTWARE key
+REM HIVE\SOFTWARE\ part should be excluded from path
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\SecurityManager\CapAuthz\ApplicationsEx" %bat_log%
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\Windows\CurrentVersion\AppHost\IndexedDB" %bat_log%
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" %bat_log%
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\Windows\CurrentVersion\PushNotifications\Backup" %bat_log%
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\Capabilities" %bat_log%
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore" %bat_log%
+set "reg_SFT_paths_scn=%reg_SFT_paths_scn%\\Microsoft\Windows NT\CurrentVersion\BackgroundModel\PreInstallTasks\RequireReschedule" %bat_log%
+REM reg_CLS_paths_scn - is only for keys located under HIVE\SOFTWARE\Classes key
+REM HIVE\SOFTWARE\Classes\ part should be excluded from path (for user profile hives it's a symlink, for internal - a real key)
+set "reg_CLS_paths_scn=%reg_CLS_paths_scn%\\ActivatableClasses\Package" %bat_log%
+set "reg_CLS_paths_scn=%reg_CLS_paths_scn%\\Extensions\ContractId" %bat_log%
+set "reg_CLS_paths_scn=%reg_CLS_paths_scn%\\Local Settings\MrtCache" %bat_log%
+set "reg_CLS_paths_scn=%reg_CLS_paths_scn%\\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\PolicyCache" %bat_log%
+set "reg_CLS_paths_scn=%reg_CLS_paths_scn%\\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData" %bat_log%
+
+call :appx_unlock_and_delete %bat_log%
 
 
 
@@ -119,7 +167,6 @@ set "service_names=edgeupdate edgeupdatem microsoftedgeelevationservice"
 for %%n in (%service_names%) do ( call :service_remove "%%~n" %bat_log% )
 
 REM Delete Desktop, StartMenu and TaskBar shortcuts; cleanup user registry
-set "REG_USERS_PATH=HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Public') do ( call :user_lnks_remove_by_path "%%~d" %bat_log% )
 del /f /q "%AllUsersProfile%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk" %bat_log%
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%" /v Default') do (
@@ -454,4 +501,107 @@ $ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]0);^
 ;| powershell -noprofile - 
 
 :_reg_HKLM_keys_access_and_delete.end
+exit /b 0
+
+
+REM unlock and delete all packages from the list
+REM list should be in pkgs_list var
+REM System.Data.SQLite.dll should be ready to use
+:appx_unlock_and_delete
+if not defined pkgs_list goto _appx_unlock_and_delete.end
+:_appx_unlock_and_delete.psl
+echo function main() {^
+	$pkgs = $env:pkgs_list.Split(' ', [StringSplitOptions]::RemoveEmptyEntries);^
+	if ($pkgs.Count -eq 0) { return }^
+	$locked_pkgs, $pkgs = $pkgs.Where({$_[0] -eq '1'}, 'Split');^
+	$locked_pkgs = $locked_pkgs.ForEach({$_.Substring(1)});^
+	$pkgs = $pkgs.ForEach({$_.Substring(1)});^
+	^
+	if ($env:reg_SFT_paths_scn) { $reg_sft_paths_scn = $env:reg_SFT_paths_scn.Trim().Split([string[]]"\\", [StringSplitOptions]::RemoveEmptyEntries) }^
+	if ($env:reg_CLS_paths_scn) { $reg_cls_paths_scn = $env:reg_CLS_paths_scn.Trim().Split([string[]]"\\", [StringSplitOptions]::RemoveEmptyEntries) }^
+	if ($reg_sft_paths_scn -or $reg_cls_paths_scn) {^
+		$usids_exclude = @('S-1-5-18', 'S-1-5-19', 'S-1-5-20');^
+		$reg_usrs_hives = (reg query "$env:REG_USERS_PATH" /k /f "*").ForEach({$_.Substring($_.LastIndexOf('\')+1)}).Where({$_.StartsWith('S-1-') -and -not $usids_exclude.Contains($_)});^
+		$reg_sft_hives = ($reg_usrs_hives.ForEach({"HKU\$_\SOFTWARE\"})) + @('HKU\.DEFAULT\SOFTWARE\', 'HKLM\SOFTWARE\');^
+		$reg_cls_hives = ($reg_usrs_hives.ForEach({"HKU\$_`_Classes\"})) + @('HKU\.DEFAULT\SOFTWARE\Classes\', 'HKLM\SOFTWARE\Classes\');^
+	}^
+	^
+	if ($locked_pkgs.Count -gt 0) {^
+		Add-Type -Path $env:file_SQLite;^
+		$attempts = 3; $rslt = $false;^
+		while ($attempts) { --$attempts; Unlock-Packages $locked_pkgs ([ref]$rslt); if ($rslt) { break }; Start-Sleep 3 }^
+		if ($rslt) { $pkgs += $locked_pkgs }^
+	}^
+	^
+	foreach ($pkg in $pkgs) {^
+		Remove-AppxPackage -Package $pkg -User $env:USER_SID;^
+		Remove-AppxPackage -Package $pkg -AllUsers;^
+		^
+		$pkg_parts = $pkg.Split('_');^
+		foreach ($reg_sft_hive in $reg_sft_hives) { reg delete "$reg_sft_hive`Microsoft\UserData\UninstallTimes" /v "$($pkg_parts[0])_$($pkg_parts[4])" /f }^
+		RegCleanup-Package($pkg_parts);^
+		$edge_chnl_pos = $pkg_parts[0].IndexOf('.MicrosoftEdge.');^
+		if ($edge_chnl_pos -ge 0) {^
+			$pkg_parts[0] = $pkg_parts[0].Substring(0, $edge_chnl_pos + 14);^
+			RegCleanup-Package $pkg_parts;^
+		}^
+		^
+		reg add "$env:REG_APPX_STORE\EndOfLife\$env:USER_SID\$pkg" /f;^
+		reg add "$env:REG_APPX_STORE\EndOfLife\S-1-5-18\$pkg" /f;^
+		reg add "$env:REG_APPX_STORE\Deprovisioned\$pkg" /f;^
+	}^
+}^
+function Unlock-Packages($pkgs, [ref]$rslt) {^
+	$rslt.Value = $false;^
+	Stop-Service StateRepository -Force;^
+	^
+	takeown /f "$env:LOC_APPREPO_DB";^
+	takeown /f "$env:LOC_APPREPO_DB`-shm";^
+	takeown /f "$env:LOC_APPREPO_DB`-wal";^
+	icacls "$env:LOC_APPREPO_DB*" /grant "$env:UserName`:F" /c;^
+	^
+	$con = [System.Data.SQLite.SQLiteConnection]::new("Data Source=$env:LOC_APPREPO_DB");^
+	$con.Open();^
+	$cmd = $con.CreateCommand();^
+	$cmd.CommandText = "SELECT name,sql FROM sqlite_master WHERE type='trigger' AND tbl_name='Package' AND name LIKE'%%AFTER%%' AND name LIKE'%%UPDATE%%'";^
+	$res = $cmd.ExecuteReader();^
+	$trgs = @{};^
+	while ($res.Read()) { $trgs[$res.GetString(0)] = $res.GetString(1) } $res.Close();^
+	^
+	try {^
+		foreach ($trg_name in $trgs.Keys) { $cmd.CommandText = "DROP TRIGGER $trg_name"; $cmd.ExecuteNonQuery() }^
+		foreach ($pkg in $pkgs) {^
+			$cmd.CommandText = "UPDATE Package SET IsInbox=0 WHERE PackageFullName='$pkg'"; $cmd.ExecuteNonQuery();^
+			reg delete "$env:REG_APPX_STORE\InboxApplications\$pkg" /f;^
+		}^
+		foreach ($trg_query in $trgs.Values) { $cmd.CommandText = $trg_query; $cmd.ExecuteNonQuery() }^
+		$rslt.Value = $true^
+	}^
+	catch { }^
+	^
+	$con.Close()^
+}^
+function RegCleanup-Package($pkg_fname_parts) {^
+	$pkg_name = $pkg_fname_parts[0] + '_';^
+	$pkg_pid = '_' + $pkg_fname_parts[4];^
+	$reg_pkg_keys = @();^
+	foreach ($reg_sft_hive in $reg_sft_hives) {^
+		foreach ($reg_sft_path in $reg_sft_paths_scn) {^
+			$reg_pkg_keys += (reg query "$reg_sft_hive$reg_sft_path" /s /f $pkg_name /k).Where({$_.StartsWith('HKEY_') -and $_.Contains($pkg_pid)});^
+		}^
+	}^
+	foreach ($reg_cls_hive in $reg_cls_hives) {^
+		foreach ($reg_cls_path in $reg_cls_paths_scn) {^
+			$reg_pkg_keys += (reg query "$reg_cls_hive$reg_cls_path" /s /f $pkg_name /k).Where({$_.StartsWith('HKEY_') -and $_.Contains($pkg_pid)});^
+		}^
+	}^
+	$reg_pkg_keys += (reg query "$env:REG_APPX_STORE" /s /f $pkg_name /k).Where({$_.StartsWith('HKEY_') -and $_.Contains($pkg_pid)});^
+	$reg_pkg_keys += (reg query "$env:REG32_APPX_STORE" /s /f $pkg_name /k).Where({$_.StartsWith('HKEY_') -and $_.Contains($pkg_pid)});^
+	^
+	foreach ($reg_pkg_key in $reg_pkg_keys) { reg delete $reg_pkg_key /f }^
+}^
+main;^
+;| powershell -noprofile - 
+
+:_appx_unlock_and_delete.end
 exit /b 0
