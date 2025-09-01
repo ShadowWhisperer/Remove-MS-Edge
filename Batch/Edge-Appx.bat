@@ -14,8 +14,8 @@ set "ISSUE_DOWNLOAD=4"
 set "ISSUE_HASH=5"
 
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
-REM also set elevated cmd mode (%ecm% var; /c or /k )
-call :log_lvl.debug
+REM also see Both.bat for details
+call :log_lvl.debug "%~1"
 
 title Edge Remover - 8/16/2025
 echo [main_script.start] %bat_dbg%
@@ -250,9 +250,10 @@ set "file_path=%tmp%\%~1"
 if exist "%file_path%" goto _file_obtain.check
 
 echo file not cached %cll_dbg%
-if %has_net% equ 0 goto _file_obtain.net.fail
 
 :_file_obtain.download
+if %has_net% equ 0 goto _file_obtain.net.fail
+
 echo [file_obtain().download] %cll_dbg%
 set "on_hash_err=check.fail"
 powershell -noprofile -c "[Net.WebClient]::new().DownloadFile('%~3', '%file_path%')"

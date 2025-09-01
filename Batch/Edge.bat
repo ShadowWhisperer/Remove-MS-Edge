@@ -17,8 +17,8 @@ set "ISSUE_DOWNLOAD=4"
 set "ISSUE_HASH=5"
 
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
-REM also set elevated cmd mode (%ecm% var; /c or /k )
-call :log_lvl.debug
+REM also see Both.bat for details
+call :log_lvl.debug "%~1"
 
 title Edge Remover - 8/16/2025
 echo [main_script.start] %bat_dbg%
@@ -408,9 +408,10 @@ set "file_path=%tmp%\%~1"
 if exist "%file_path%" goto _file_obtain.check
 
 echo file not cached %cll_dbg%
-if %has_net% equ 0 goto _file_obtain.net.fail
 
 :_file_obtain.download
+if %has_net% equ 0 goto _file_obtain.net.fail
+
 echo [file_obtain().download] %cll_dbg%
 set "on_hash_err=check.fail"
 powershell -noprofile -c "[Net.WebClient]::new().DownloadFile('%~3', '%file_path%')"
@@ -451,7 +452,7 @@ REM remove task by name if name match pattern
 :task_remove
 set "task_name=%~1"
 if "%task_name:~0,1%" neq "\" goto _task_remove.end
-if "%task_name:\MicrosoftEdge=%" equ "%task_name%" goto _task_remove.end
+if /i "%task_name:\MicrosoftEdge=%" equ "%task_name%" goto _task_remove.end
 echo [task_remove()] "%task_name%" %cll_dbg%
 schtasks /end /tn "%task_name%"
 schtasks /delete /tn "%task_name%" /f
@@ -481,9 +482,9 @@ REM call shortcuts removing
 REM call cleanup of user registry
 :user_cleanup_by_sid
 echo [user_cleanup_by_sid()] "%1" %cll_dbg%
-if "%1" equ "S-1-5-18" goto _user_cleanup_by_sid.end
-if "%1" equ "S-1-5-19" goto _user_cleanup_by_sid.end
-if "%1" equ "S-1-5-20" goto _user_cleanup_by_sid.end
+if /i "%1" equ "S-1-5-18" goto _user_cleanup_by_sid.end
+if /i "%1" equ "S-1-5-19" goto _user_cleanup_by_sid.end
+if /i "%1" equ "S-1-5-20" goto _user_cleanup_by_sid.end
 
 echo accepted %cll_dbg%
 for /f "skip=2 tokens=2*" %%c in ('reg query "%REG_USERS_PATH%\%1" /v ProfileImagePath') do ( set "profile_path=%%~d" )
