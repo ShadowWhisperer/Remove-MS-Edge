@@ -48,6 +48,8 @@ echo [uac().success] %bat_dbg%
 
 REM Admin permissions granted, executor SID is admin SID
 set "ADMIN_SID=%USER_SID%"
+REM For automaters: when use privileged profile, specify "-auto" as 1st argument to bypass confirmation
+if /i "%~1" equ "-auto" goto uac.done
 REM When script elevates itself, the user SID should be passed as 1st argument
 if "%~1" neq "" goto uac.usid_set
 REM User use Admin account or elevates script by hands
@@ -415,6 +417,7 @@ REM resolves issue with accessing log file on elevation
 timeout /t 1 /nobreak >NUL 2>&1
 REM reset log file if this is not elevation re-run (bad check, cuz someone may pass an argument)
 if "%~1" equ "" echo %~nx0 >"%~dpn0_dbg.log"
+if /i "%~1" equ "-auto" echo %~nx0 >"%~dpn0_dbg.log"
 exit /b 0
 
 
