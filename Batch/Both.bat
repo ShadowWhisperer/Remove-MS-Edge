@@ -30,12 +30,12 @@ powershell -Command "try { (New-Object Net.WebClient).DownloadFile('https://raw.
 if not exist "%fileSetup%" echo File download failed. Check your internet connection & echo & pause & exit
 
 :file_check
-powershell -Command "exit ((Get-FileHash '%fileSetup%' -Algorithm SHA256).Hash.ToLower() -ne '%expected%')"
+powershell -Command "Import-Module Microsoft.PowerShell.Utility; exit ((Get-FileHash '%fileSetup%' -Algorithm SHA256).Hash.ToLower() -ne '%expected%')"
 if %errorlevel% neq 0 goto file_%onHashErr%
 echo. & goto uninst_edge
 
 :file_error
-echo File hash does not match the expected value. & echo & pause & exit
+echo File hash does not match the expected value. & echo. & pause & exit
 
 
 REM #Edge
