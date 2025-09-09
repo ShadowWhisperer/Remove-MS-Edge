@@ -33,7 +33,7 @@
 
 <br>
 
-**Batch Version**
+**Batch Version** (Mostly by [XakerTwo](https://github.com/XakerTwo))
 
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
 [Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge and Appx version of Edge only.  
