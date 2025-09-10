@@ -38,8 +38,8 @@ if %errorlevel% equ 0 goto uac.success
 REM When UAC disabled, elevation not works
 if "%USER_SID%" equ "%~1" echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
 REM Elevate with psl (don't try go around cmd /c)
-REM quotes levels              │┌┤            ├┐│ │   ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
-REM quotes open-closing(pipe)  <><            ><> <   ><><   >< ><          ><><>
+REM quotes levels              │┌┤            ├┐│ │      ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
+REM quotes open-closing(pipe)  <><            ><> <      ><><   >< ><          ><><>
 echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%USER_SID%"""""|powershell -noprofile - %bat_log%
 echo [uac().elevated] err: "%errorlevel%" %bat_dbg%
 exit /b %errorlevel%
