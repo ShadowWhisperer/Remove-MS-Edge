@@ -76,6 +76,7 @@ echo has network: %has_net% %bat_dbg%
 
 REM detect OS bit and obtain correct setup
 REM Thanks to @Ameterius for the 32bit setup,exe
+echo - Obtaining required files
 if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
     call :file_obtain^
      "setup.exe"^
@@ -799,3 +800,4 @@ main;^
 :_appx_unlock_and_delete.end
 echo [appx_unlock_and_delete().end] %cll_dbg%
 exit /b 0
+
