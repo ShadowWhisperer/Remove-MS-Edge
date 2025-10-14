@@ -74,14 +74,23 @@ ipconfig | find "IPv" >NUL 2>&1
 if %errorlevel% equ 0 set "has_net=1"
 echo has network: %has_net% %bat_dbg%
 
-echo - Obtaining required files
-echo obtaining files %bat_dbg%
-call :file_obtain^
- "setup.exe"^
- "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
- "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
- "file_setup"^
- %bat_log%
+REM detect OS bit and obtain correct setup
+REM Thanks to @Ameterius for the 32bit setup,exe
+if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
+    call :file_obtain^
+     "setup.exe"^
+     "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
+     "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
+     "file_setup"^
+     %bat_log%
+) else (
+    call :file_obtain^
+     "setup.exe"^
+     "876eeab3f753addc42805127683b770590cc1dbaccb02363352bfdc62ccabd76"^
+     "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
+     "file_setup"^
+     %bat_log%
+)
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
 REM dll name should not be changed, otherwise "dll not found" error pops out on usage
