@@ -13,8 +13,12 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
     os.system("timeout /t 4 >nul")
     sys.exit(1)
 
+print("Bye Bye Edge - Enhanced - 8/09/2025 - ShadowWhisperer")
+print("Original by ShadowWhisperer")
+print("=" * 40)
+
 # Title
-ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/09/2025 - ShadowWhisperer")
+ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - Enhanced - 8/09/2025 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -34,40 +38,76 @@ is_64bit_windows = "ProgramFiles(x86)" in os.environ
 access_flag = winreg.KEY_WRITE | (winreg.KEY_WOW64_64KEY if is_64bit_windows else 0)
 
 # Get user profiles
-with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
-    user_profiles = [winreg.EnumKey(key, i) for i in range(winreg.QueryInfoKey(key)[0])]
-    USERS_DIR = [winreg.QueryValueEx(winreg.OpenKey(key, profile), "ProfileImagePath")[0] for profile in user_profiles]
+try:
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
+        user_profiles = [winreg.EnumKey(key, i) for i in range(winreg.QueryInfoKey(key)[0])]
+        USERS_DIR = [winreg.QueryValueEx(winreg.OpenKey(key, profile), "ProfileImagePath")[0] for profile in user_profiles]
+    print(f"Found {len(USERS_DIR)} user profiles to process")
+except Exception as e:
+    print(f"Warning: Could not enumerate user profiles: {e}")
+    USERS_DIR = []
 
 ################################################################################################################################################
 
 # Edge
+print("\n[1/8] Checking Microsoft Edge application...")
 EDGE_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\Edge\\Application\\pwahelper.exe")
 if os.path.exists(EDGE_PATH):
-    print("Removing Microsoft Edge")
-    cmd = [src, "--uninstall", "--system-level", "--force-uninstall"]
-    subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    os.system("timeout /t 2 >nul")
+    print("Removing Microsoft Edge application...")
+    try:
+        cmd = [src, "--uninstall", "--system-level", "--force-uninstall"]
+        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        os.system("timeout /t 2 >nul")
+        print("✓ Edge application removal initiated")
+    except Exception as e:
+        print(f"⚠ Edge application removal failed: {e}")
+else:
+    print("Microsoft Edge application not found - skipping")
 
 # WebView
-EDGE_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\EdgeWebView\\Application")
-if os.path.exists(EDGE_PATH):
-    print("Removing WebView")
-    cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
-    subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+print("\n[2/8] Checking WebView2...")
+WEBVIEW_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\EdgeWebView\\Application")
+if os.path.exists(WEBVIEW_PATH):
+    print("Removing WebView2...")
+    try:
+        cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        print("✓ WebView2 removal initiated")
+    except Exception as e:
+        print(f"⚠ WebView2 removal failed: {e}")
+else:
+    print("WebView2 not found - skipping")
 
 # Edge / MicrosoftEdgeDevTools (Appx Packages)
-user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
-output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -ilike "*MicrosoftEdge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
-edge_apps = [app.strip() for app in output.decode().strip().split('\r\n') if app.strip()]
-base_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
-for app in edge_apps:
-    for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
-        winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, access=access_flag)
+print("\n[3/8] Processing Edge AppX packages...")
+try:
+    user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
+    output = subprocess.check_output(['powershell', '-NoProfile', '-Command', 'Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -ilike "*MicrosoftEdge*"} | Select-Object -ExpandProperty PackageFullName'], startupinfo=hide_console())
+    edge_apps = [app.strip() for app in output.decode().strip().split('\r\n') if app.strip()]
+    
+    if edge_apps:
+        print(f"Found {len(edge_apps)} Edge AppX packages to process")
+        base_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
+        processed = 0
+        for app in edge_apps:
+            try:
+                for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
+                    winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, access=access_flag)
+                processed += 1
+            except Exception as e:
+                print(f"⚠ Failed to process package: {app[:50]}...")
+        print(f"✓ Processed {processed}/{len(edge_apps)} AppX packages")
+    else:
+        print("No Edge AppX packages found")
+except Exception as e:
+    print(f"⚠ AppX processing failed: {e}")
 
 
 ################################################################################################################################################
 
 # Delete bad reg keys - https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
+print("\n[4/8] Cleaning malformed registry keys...")
+
 def should_delete(name):
     return not re.search(r'[a-zA-Z]', name) or ' ' in name
 
@@ -80,45 +120,92 @@ def delete_tree(root, path):
                 except OSError:
                     break
         winreg.DeleteKeyEx(root, path, access=access_flag)
+        return True
     except:
-        pass
+        return False
 
 def clean_subkeys(root, path):
     try:
+        cleaned = 0
         with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | access_flag) as key:
             for i in range(winreg.QueryInfoKey(key)[0]):
-                subkey = winreg.EnumKey(key, i)
-                subkey_path = f"{path}\\{subkey}"
-                if should_delete(subkey):
-                    delete_tree(root, subkey_path)
-                else:
-                    clean_subkeys(root, subkey_path)
+                try:
+                    subkey = winreg.EnumKey(key, i)
+                    subkey_path = f"{path}\\{subkey}"
+                    if should_delete(subkey):
+                        if delete_tree(root, subkey_path):
+                            cleaned += 1
+                    else:
+                        cleaned += clean_subkeys(root, subkey_path)
+                except OSError:
+                    break
+        return cleaned
     except:
-        pass
+        return 0
 
-clean_subkeys(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore")
+try:
+    cleaned_count = clean_subkeys(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore")
+    if cleaned_count > 0:
+        print(f"✓ Cleaned {cleaned_count} malformed registry keys")
+    else:
+        print("No malformed registry keys found")
+except Exception as e:
+    print(f"⚠ Registry cleanup failed: {e}")
 
 ################################################################################################################################################
 
 # Desktop Icons
+print("\n[5/8] Removing desktop shortcuts and start menu icons...")
+
+deleted_shortcuts = 0
 for user_dir in USERS_DIR:
     desktop_path = os.path.join(user_dir, "Desktop")
     for link in [os.path.join(desktop_path, name) for name in ["edge.lnk", "Microsoft Edge.lnk"]]:
-        if os.path.exists(link):
-            os.remove(link)
+        try:
+            if os.path.exists(link):
+                os.remove(link)
+                deleted_shortcuts += 1
+        except Exception as e:
+            pass  # Silently continue
 
 # Start Menu Icon
 START_MENU_PATH = os.path.join(PROGRAM_DATA, "Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk")
-if os.path.exists(START_MENU_PATH):
-    os.remove(START_MENU_PATH)
+try:
+    if os.path.exists(START_MENU_PATH):
+        os.remove(START_MENU_PATH)
+        deleted_shortcuts += 1
+except Exception as e:
+    pass  # Silently continue
+
+if deleted_shortcuts > 0:
+    print(f"✓ Removed {deleted_shortcuts} shortcuts and icons")
+else:
+    print("No shortcuts or icons found")
 
 # Tasks - Name
-result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, startupinfo=hide_console())
-tasks = result.stdout.strip().split('\n')[1:]
-microsoft_edge_tasks = [task.split(',')[0].strip('"') for task in tasks if 'MicrosoftEdge' in task]
-with open(os.devnull, 'w') as devnull:
-    for task in microsoft_edge_tasks:
-        subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull, startupinfo=hide_console())
+print("\n[6/8] Removing scheduled tasks...")
+
+try:
+    result = subprocess.run(['schtasks', '/query', '/fo', 'csv'], capture_output=True, text=True, startupinfo=hide_console())
+    tasks = result.stdout.strip().split('\n')[1:]
+    microsoft_edge_tasks = [task.split(',')[0].strip('"') for task in tasks if 'MicrosoftEdge' in task]
+    
+    deleted_tasks = 0
+    with open(os.devnull, 'w') as devnull:
+        for task in microsoft_edge_tasks:
+            try:
+                subprocess.run(['schtasks', '/delete', '/tn', task, '/f'], check=False, stdout=devnull, stderr=devnull, startupinfo=hide_console())
+                deleted_tasks += 1
+            except Exception as e:
+                pass  # Silently continue
+    
+    if deleted_tasks > 0:
+        print(f"✓ Removed {deleted_tasks} scheduled tasks")
+    else:
+        print("No Microsoft Edge scheduled tasks found")
+        
+except Exception as e:
+    print(f"⚠ Failed to query/remove scheduled tasks: {e}")
 
 # Tasks - Files
 TASKS_PATH = os.path.join(SYSTEM_ROOT, "System32\\Tasks")
@@ -129,11 +216,27 @@ for root, dirs, files in os.walk(TASKS_PATH):
             os.remove(file_path)
 
 # Edge Services
+print("\n[7/8] Stopping and removing Edge services...")
+
 service_names = ["edgeupdate", "edgeupdatem", "MicrosoftEdgeElevationService"]
+removed_services = 0
+
 for name in service_names:
-    subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console())
+    try:
+        result = subprocess.run(['sc', 'delete', name], capture_output=True, text=True, startupinfo=hide_console())
+        if result.returncode == 0:
+            removed_services += 1
+    except Exception as e:
+        pass  # Silently continue
+
+if removed_services > 0:
+    print(f"✓ Removed {removed_services} Edge services")
+else:
+    print("No Edge services found to remove")
 
 # Folders
+print("\n[8/8] Removing Edge directories and files...")
+
 # - C:\Windows\SystemApps\
 # - C:\Program Files\WindowsApps\
 # - C:\Program Files (x86)\Microsoft\
@@ -153,24 +256,48 @@ def remove_directory(path):
         # C:\Windows\SystemApps\Microsoft.MicrosoftEdgeDevToolsClient* - would not delete with shutil
         if os.path.exists(path):
             run_cmd(['cmd.exe', '/c', 'rd', '/s', '/q', path])
+        return not os.path.exists(path)
+    return True
 
-for root_dir in [os.path.join(SYSTEM_ROOT, "SystemApps"), os.path.join(PROGRAM_FILES, "WindowsApps")]:
-    if os.path.exists(root_dir):
-        for folder_name in os.listdir(root_dir):
-            if folder_name.startswith(('Microsoft.MicrosoftEdge', 'Microsoft.MicrosoftEdgeDevToolsClient')):
-                remove_directory(os.path.join(root_dir, folder_name))
+removed_dirs = 0
+removed_files = 0
 
+try:
+    for root_dir in [os.path.join(SYSTEM_ROOT, "SystemApps"), os.path.join(PROGRAM_FILES, "WindowsApps")]:
+        if os.path.exists(root_dir):
+            for folder_name in os.listdir(root_dir):
+                if folder_name.startswith(('Microsoft.MicrosoftEdge', 'Microsoft.MicrosoftEdgeDevToolsClient')):
+                    if remove_directory(os.path.join(root_dir, folder_name)):
+                        removed_dirs += 1
+    
     run_cmd(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"])
     for folder in ["Edge", "EdgeCore", "EdgeUpdate", "Temp"]:
-        remove_directory(os.path.join(PROGRAM_FILES_X86, "Microsoft", folder))
+        folder_path = os.path.join(PROGRAM_FILES_X86, "Microsoft", folder)
+        if remove_directory(folder_path):
+            removed_dirs += 1
+            
+except Exception as e:
+    pass  # Continue with file removal
 
 # Files - System32
-user_name = getpass.getuser()
-for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
-    if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
-        subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
-        subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
-        os.remove(f.path)
+try:
+    user_name = getpass.getuser()
+    for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
+        if f.name.startswith("MicrosoftEdge") and f.name.endswith(".exe"):
+            try:
+                subprocess.run(f'takeown /f "{f.path}" > NUL 2>&1', shell=True)
+                subprocess.run(f'icacls "{f.path}" /inheritance:e /grant "{user_name}:(OI)(CI)F" /T /C > NUL 2>&1', shell=True)
+                os.remove(f.path)
+                removed_files += 1
+            except Exception as e:
+                pass  # Continue with next file
+except Exception as e:
+    pass  # Continue
+
+if removed_dirs > 0 or removed_files > 0:
+    print(f"✓ Removed {removed_dirs} directories and {removed_files} files")
+else:
+    print("No additional directories or files found to remove")
 
 
 ################################################################################################################################################
@@ -324,3 +451,17 @@ def delete_hkcr_microsoftedge_keys():
                 pass
 
 delete_hkcr_microsoftedge_keys()
+
+################################################################################################################################################
+
+print("\n" + "="*60)
+print("Microsoft Edge Removal Complete!")
+print("="*60)
+print("\n⚠ IMPORTANT: Please restart your computer to complete the removal process.")
+print("\n✓ All removal tasks have been executed successfully.")
+print("  If Edge was not completely removed, you may need to:")
+print("  - Run the script again after restart")
+print("  - Check for Windows updates that might reinstall Edge")
+print("  - Manually remove any remaining registry entries")
+print("\nPress any key to exit...")
+input()
