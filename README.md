@@ -1,11 +1,9 @@
 ![License](https://img.shields.io/github/license/ShadowWhisperer/Remove-MS-Edge)  
-<a href="https://www.buymeacoffee.com/wic8pmtmys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Piza" height="36" width="120"></a>
 
 ```diff
 - Removing Edge may cause update failure loop. 
   Install Edge, install all Windows updates, then remove Edge. 
 ```
-<br>
 
 **Requires WebView**  
 ```
@@ -16,6 +14,7 @@
 - Microsoft Photos App (Edit)
 - PowerToys File Explorer add-ons utility
 - Quicken
+- Safing Portmaster
 - Windows Mail  
 - Xbox App
 ```
