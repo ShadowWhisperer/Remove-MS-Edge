@@ -28,7 +28,7 @@
 <br>  
 
 *Build From Source*  
-```pyinstaller --noconsole --onefile -n Remove-Edge.exe edge.py --add-data "setup.exe;."```  
+```pyinstaller --onefile --noconsole -i icon.ico -n Remove-Edge.exe edge.py --add-data "setup.exe;." --add-data "setupi386.exe;."```  
 
 <br>
 
