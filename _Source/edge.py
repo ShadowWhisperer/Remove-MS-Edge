@@ -7,6 +7,7 @@ import subprocess  # Run setup.exe file
 import winreg      # Modify Windows Registry (Remove Edge Appx Packages)
 import re          # Regular expression for subkey name validation
 
+
 # Check if ran as admin - Do not force run as admin
 if not ctypes.windll.shell32.IsUserAnAdmin(): 
     print("\n Please run as admin.\n")
@@ -14,7 +15,7 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
     sys.exit(1)
 
 # Title
-ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/09/2025 - ShadowWhisperer")
+ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/12/2025 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -23,15 +24,17 @@ def hide_console():
     return startupinfo
 
 # Set Paths
-src = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(__file__)), "setup.exe")
 PROGRAM_FILES_X86 = os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")
 PROGRAM_FILES = os.environ.get("ProgramFiles", "C:\\Program Files")
 SYSTEM_ROOT = os.environ.get("SystemRoot", "C:\\Windows")
 PROGRAM_DATA = os.environ.get("ProgramData", "C:\\ProgramData")
 
-# 32 or 64bit
+# 32 or 64bit - Registry
 is_64bit_windows = "ProgramFiles(x86)" in os.environ
 access_flag = winreg.KEY_WRITE | (winreg.KEY_WOW64_64KEY if is_64bit_windows else 0)
+# 32 or 64bit - setup.exe
+setup_name = "setup.exe" if is_64bit_windows else "setupi386.exe"
+src = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(__file__)), setup_name)
 
 # Get user profiles
 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList") as key:
