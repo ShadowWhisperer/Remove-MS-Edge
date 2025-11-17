@@ -671,6 +671,7 @@ REM get access and delete registry keys in HKLM hive
 REM keys for TakeOwn+FullControl ONLY should be in reg_HKLM_keys_acs var
 REM keys that also should be deleted - in reg_HKLM_keys_del var
 REM DO NOT pass keys with values at tail
+REM TakeOwn+FullControl operation may fails, but removing attempt will be made anyway
 :reg_HKLM_keys_access_and_delete
 echo [reg_HKLM_keys_access_and_delete()] %cll_dbg%
 if defined reg_HKLM_keys_acs goto _reg_HKLM_keys_access_and_delete.psl
@@ -686,23 +687,25 @@ $user_ident = [System.Security.Principal.NTAccount]$env:UserName;^
 $access_rule = [System.Security.AccessControl.RegistryAccessRule]::new($user_ident, 0xF003F, 3, 0, 0);^
 $hive_HKLM = [Microsoft.Win32.Registry]::LocalMachine;^
 $ntdll = Add-Type -Member '[DllImport("ntdll.dll")] public static extern int RtlAdjustPrivilege(ulong p, bool e, bool t, ref bool l);' -Name NtDll -PassThru;^
-$lp = 0; $ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp);^
+$lp = 0;^
 ;^
-;"accessing"%psl_dbg%;^
-foreach ($key_path in $key_paths_acs) {^
-	$key_path%psl_dbg%;^
-	$key_obj = $hive_HKLM.OpenSubKey($key_path, 2, 0x80000);^
-	if (!$key_obj) { "key not found"%psl_dbg%; continue };^
-	^
-	($acl = $key_obj.GetAccessControl()).SetOwner($user_ident);^
-	$key_obj.SetAccessControl($acl);^
-	$acl.AddAccessRule($access_rule);^
-	$key_obj.SetAccessControl($acl);^
-	$key_obj.Close();^
-}^
+if ($ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp) -eq 0) {^
+	"accessing"%psl_dbg%;^
+	foreach ($key_path in $key_paths_acs) {^
+		$key_path%psl_dbg%;^
+		$key_obj = $hive_HKLM.OpenSubKey($key_path, 2, 0x80000);^
+		if (!$key_obj) { "key not found"%psl_dbg%; continue };^
+		^
+		($acl = $key_obj.GetAccessControl()).SetOwner($user_ident);^
+		$key_obj.SetAccessControl($acl);^
+		$acl.AddAccessRule($access_rule);^
+		$key_obj.SetAccessControl($acl);^
+		$key_obj.Close();^
+	}^
+	$ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]$lp);^
+} else { "TakeOwnership enabling failed; attempt to remove anyway"%psl_dbg% }^
 ;"removing"%psl_dbg%;^
 foreach ($key_path in $key_paths_del) { $key_path%psl_dbg%; $hive_HKLM.DeleteSubKeyTree($key_path, 0) }^
-$ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]0);^
 ;| powershell -noprofile - 
 
 :_reg_HKLM_keys_access_and_delete.end
