@@ -15,6 +15,13 @@ set "ISSUE_UAC=2"
 set "ISSUE_NETWORK=3"
 set "ISSUE_DOWNLOAD=4"
 set "ISSUE_HASH=5"
+set "ISSUE_ARCH=6"
+
+REM check for architecture (x86 and amd64 are supported, arm - not)
+if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" goto arch.pass
+if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
+echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
+:arch.pass
 
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also see Both.bat for details
@@ -69,45 +76,63 @@ ipconfig | find "IPv" >NUL 2>&1
 if %errorlevel% equ 0 set "has_net=1"
 echo has network: %has_net% %bat_dbg%
 
-REM detect OS bit and obtain correct setup
-REM Thanks to @Ameterius for the 32bit setup,exe
+REM prepare architecture-depend stuff (see Both.bat for details)
 echo - Obtaining required files
-if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
-    call :file_obtain^
-     "setup.exe"^
-     "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
-     "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
-     "file_setup"^
-     %bat_log%
-) else (
-    call :file_obtain^
-     "setup.exe"^
-     "97935C67FE17C388CFF6C498B565130F9262EA9518150303FFF08576C67CFD9D"^
-     "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
-     "file_setup"^
-     %bat_log%
-)
+echo [prepare()] %bat_dbg%
+goto prepare.%PROCESSOR_ARCHITECTURE%
+
+
+:prepare.amd64
+echo [prepare().amd64] %bat_dbg%
+
+set "x86ProgramsFolder=%ProgramFiles(x86)%"
+
+call :file_obtain^
+ "setup.exe"^
+ "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
+ "file_setup"^
+ %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-REM dll name should not be changed (see Both.bat for details)
-if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-) else (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-)
+call :file_obtain^
+ "System.Data.SQLite.dll"^
+ "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
+ "file_SQLite"^
+ %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-echo files obtained %bat_dbg%
+goto prepare.done
+
+
+:prepare.x86
+echo [prepare().x86] %bat_dbg%
+
+set "x86ProgramsFolder=%ProgramFiles%"
+
+REM Thanks to @Ameterius for the 32bit setup.exe
+call :file_obtain^
+ "setup.exe"^
+ "97935c67fe17c388cff6c498b565130f9262ea9518150303fff08576c67cfd9d"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
+ "file_setup"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+call :file_obtain^
+ "System.Data.SQLite.dll"^
+ "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
+ "file_SQLite"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+goto prepare.done
+
+:prepare.done
+echo x86ProgramsFolder: %x86ProgramsFolder% %bat_dbg%
+echo [prepare().done] %bat_dbg%
 
 
 
@@ -126,16 +151,11 @@ echo packages queried %bat_dbg%
 
 
 
-REM ProgramFiles(x86) or ProgramFiles 32-bit Windows
-set "PF=%ProgramFiles(x86)%"
-if "%PF%"=="" set "PF=%ProgramFiles%"
-set "ProgramFolder=%PF%"
-
 REM #Uninstall
 echo [uninstall()] %bat_dbg%
 echo - Removing Edge
 echo [uninstall().edge.init] %bat_dbg%
-where "%ProgramFolder%\Microsoft\Edge\Application:*" %bat_log%
+where "%x86ProgramsFolder%\Microsoft\Edge\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.edge.done
 
 echo [uninstall().edge] %bat_dbg%
@@ -194,10 +214,10 @@ echo [cleanup().edge] %bat_dbg%
 
 REM Delete Edge empty folders
 echo [cleanup().edge.dirs] %bat_dbg%
-rd /s /q "%ProgramFolder%\Microsoft\Edge" %bat_log%
-rd /s /q "%ProgramFolder%\Microsoft\EdgeCore" %bat_log%
-rd /s /q "%ProgramFolder%\Microsoft\EdgeUpdate" %bat_log%
-rd /s /q "%ProgramFolder%\Microsoft\Temp" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\Edge" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeCore" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeUpdate" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\Temp" %bat_log%
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" %bat_log%
 
 REM Delete Edge Update Tasks

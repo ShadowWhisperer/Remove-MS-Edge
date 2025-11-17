@@ -12,6 +12,13 @@ set "ISSUE_UAC=2"
 set "ISSUE_NETWORK=3"
 set "ISSUE_DOWNLOAD=4"
 set "ISSUE_HASH=5"
+set "ISSUE_ARCH=6"
+
+REM check for architecture (x86 and amd64 are supported, arm - not)
+if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" goto arch.pass
+if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
+echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
+:arch.pass
 
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also see Both.bat for details
@@ -66,27 +73,41 @@ ipconfig | find "IPv" >NUL 2>&1
 if %errorlevel% equ 0 set "has_net=1"
 echo has network: %has_net% %bat_dbg%
 
+REM prepare architecture-depend stuff (see Both.bat for details)
 echo - Obtaining required files
-echo obtaining files %bat_dbg%
-REM dll name should not be changed (see Both.bat for details)
-if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-) else (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-)
+echo [prepare()] %bat_dbg%
+goto prepare.%PROCESSOR_ARCHITECTURE%
+
+
+:prepare.amd64
+echo [prepare().amd64] %bat_dbg%
+
+call :file_obtain^
+ "System.Data.SQLite.dll"^
+ "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
+ "file_SQLite"^
+ %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-echo files obtained %bat_dbg%
+goto prepare.done
+
+
+:prepare.x86
+echo [prepare().x86] %bat_dbg%
+
+call :file_obtain^
+ "System.Data.SQLite.dll"^
+ "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
+ "file_SQLite"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+goto prepare.done
+
+:prepare.done
+echo [prepare().done] %bat_dbg%
 
 
 
