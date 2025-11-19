@@ -27,7 +27,7 @@
 
 <br>  
 
-*Build From Source*  
+**Build From Source**  
 ```pyinstaller --onefile --noconsole -i icon.ico -n Remove-Edge.exe edge.py --add-data "setup.exe;." --add-data "setupi386.exe;."```  
 
 <br>
@@ -37,8 +37,6 @@
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
 [Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge and Appx version of Edge only.  
 [Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) - Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
-
-To use batch offline, download [setup.exe](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/_Source/setup.exe?raw=true), from _Source and keep it next to the .bat
 
 <br>
 
