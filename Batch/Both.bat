@@ -23,7 +23,7 @@ REM also set elevated cmd mode (%ecm% var; /c or /k )
 REM log_lvl.debug checks for argument, but due to the call, batch args "hidden", so pass it
 call :log_lvl.debug "%~1"
 
-title Edge Remover - 8/16/2025
+title Edge Remover - 11/18/2025
 echo [main_script.start] %bat_dbg%
 
 
@@ -134,11 +134,17 @@ echo packages queried %bat_dbg%
 
 
 
+REM ProgramFiles(x86) or ProgramFiles 32-bit Windows
+set "PF=%ProgramFiles(x86)%"
+if "%PF%"=="" set "PF=%ProgramFiles%"
+set "ProgramFolder=%PF%"
+
+
 REM #Uninstall
 echo [uninstall()] %bat_dbg%
 echo - Removing Edge
 echo [uninstall().edge.init] %bat_dbg%
-where "%ProgramFiles(x86)%\Microsoft\Edge\Application:*" %bat_log%
+where "%ProgramFolder%\Microsoft\Edge\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.edge.done
 
 echo [uninstall().edge] %bat_dbg%
@@ -152,7 +158,7 @@ echo [uninstall().edge.done] %bat_dbg%
 
 echo - Removing WebView
 echo [uninstall().webview.init] %bat_dbg%
-where "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application:*" %bat_log%
+where "%ProgramFolder%\Microsoft\EdgeWebView\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.webview.done
 
 echo [uninstall().webview] %bat_dbg%
@@ -211,10 +217,10 @@ echo [cleanup().edge] %bat_dbg%
 
 REM Delete Edge empty folders
 echo [cleanup().edge.dirs] %bat_dbg%
-rd /s /q "%ProgramFiles(x86)%\Microsoft\Edge" %bat_log%
-rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeCore" %bat_log%
-rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeUpdate" %bat_log%
-rd /s /q "%ProgramFiles(x86)%\Microsoft\Temp" %bat_log%
+rd /s /q "%ProgramFolder%\Microsoft\Edge" %bat_log%
+rd /s /q "%ProgramFolder%\Microsoft\EdgeCore" %bat_log%
+rd /s /q "%ProgramFolder%\Microsoft\EdgeUpdate" %bat_log%
+rd /s /q "%ProgramFolder%\Microsoft\Temp" %bat_log%
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" %bat_log%
 
 REM Delete Edge Update Tasks
@@ -244,7 +250,7 @@ echo [cleanup().webview] %bat_dbg%
 
 REM Delete WebView empty folders
 echo [cleanup().webview.dirs] %bat_dbg%
-rd /s /q "%ProgramFiles(x86)%\Microsoft\EdgeWebView" %bat_log%
+rd /s /q "%ProgramFolder%\Microsoft\EdgeWebView" %bat_log%
 
 echo [cleanup().webview.done] %bat_dbg%
 
@@ -800,5 +806,3 @@ main;^
 :_appx_unlock_and_delete.end
 echo [appx_unlock_and_delete().end] %cll_dbg%
 exit /b 0
-
-
