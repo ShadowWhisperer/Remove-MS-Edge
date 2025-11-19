@@ -87,7 +87,7 @@ if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
 ) else (
     call :file_obtain^
      "setup.exe"^
-     "876eeab3f753addc42805127683b770590cc1dbaccb02363352bfdc62ccabd76"^
+     "97935C67FE17C388CFF6C498B565130F9262EA9518150303FFF08576C67CFD9D"^
      "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
      "file_setup"^
      %bat_log%
@@ -800,4 +800,5 @@ main;^
 :_appx_unlock_and_delete.end
 echo [appx_unlock_and_delete().end] %cll_dbg%
 exit /b 0
+
 
