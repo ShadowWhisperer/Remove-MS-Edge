@@ -38,8 +38,8 @@ if %errorlevel% equ 0 goto uac.success
 REM When UAC disabled, elevation not works
 if "%USER_SID%" equ "%~1" echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
 REM Elevate with psl (don't try go around cmd /c)
-REM quotes levels              │┌┤            ├┐│ │   ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
-REM quotes open-closing(pipe)  <><            ><> <   ><><   >< ><          ><><>
+REM quotes levels              │┌┤            ├┐│ │      ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
+REM quotes open-closing(pipe)  <><            ><> <      ><><   >< ><          ><><>
 echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%USER_SID%"""""|powershell -noprofile - %bat_log%
 echo [uac().elevated] err: "%errorlevel%" %bat_dbg%
 exit /b %errorlevel%
@@ -212,6 +212,9 @@ echo [uninstall().end] %bat_dbg%
 
 REM #Cleanup
 echo [cleanup()] %bat_dbg%
+REM CSC stands for ComponentsStorage.Component, not ComponentsStorageConfig
+set "reg_CSC_keys_set="
+
 echo - Cleaning Edge remains
 echo [cleanup().edge] %bat_dbg%
 
@@ -264,6 +267,7 @@ for /d %%d in ("%SystemRoot%\SystemApps\Microsoft.MicrosoftEdge*") do (
 	echo dir: "%%~d" %bat_dbg%
 	takeown /f "%%~d" /r /d y %bat_dbg%
 	icacls "%%~d" /grant "%UserName%:F" /t /c %bat_dbg%
+	call :csc_scan_psl "%%~d" %bat_log%
 	rd /s /q "%%~d" %bat_log%
 )
 REM %ProgramFiles%\WindowsApps\Microsoft.MicrosoftEdge*
@@ -318,8 +322,38 @@ for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
 	echo file: "%%~f" %bat_dbg%
 	takeown /f "%%~f" %bat_log%
 	icacls "%%~f" /grant "%UserName%:F" /c %bat_log%
+	REM on huge amount of files spin-up psl for each will be too expensive
+	REM it would be better to use fsutil version (not included)
+	REM or slightly modify psl version to allow wildcards and move the call ahead of this loop
+	call :csc_scan_psl "%%~f" %bat_log%
 	del /f /q "%%~f" %bat_log%
 )
+
+
+REM Components Storage
+echo - Configuring Components Storage
+echo [extra_cleanup().cs_config.init] %bat_dbg%
+
+echo prepare cs hive %bat_dbg%
+reg query HKLM\COMPONENTS /ve %bat_log%
+if %errorlevel% neq 0 reg load HKLM\COMPONENTS "%SystemRoot%\System32\config\COMPONENTS" %bat_log%
+if %errorlevel% neq 0 echo cs hive load fail %bat_dbg% & goto extra_cleanup.cs_config.done
+echo cs hive ready %bat_dbg%
+
+echo prepare cs backup dir %bat_dbg%
+if not exist "%~dp0CSBkp" md "%~dp0CSBkp" %bat_log%
+if %errorlevel% neq 0 echo cs backup dir create fail %bat_dbg% & goto extra_cleanup.cs_config.done
+echo cs backup dir ready %bat_dbg%
+
+echo [extra_cleanup().cs_config] %bat_dbg%
+for %%k in (%reg_CSC_keys_set%) do (
+	echo component: "%%~k" %bat_dbg%
+	reg export "HKLM\COMPONENTS\DerivedData\Components\%%~k" "%~dp0CSBkp\%%~k.reg" /y %bat_log%
+	reg delete "HKLM\COMPONENTS\DerivedData\Components\%%~k" /f %bat_log%
+)
+
+:extra_cleanup.cs_config.done
+echo [extra_cleanup().cs_config.done] %bat_dbg%
 
 
 REM Malformed Keys
@@ -359,6 +393,7 @@ echo [extra_cleanup().end] %bat_dbg%
 
 REM Main script end
 echo - Edge removal complete
+%for_out_del%
 echo [main_script.end] %bat_dbg%
 exit /b 0
 
@@ -805,4 +840,43 @@ main;^
 
 :_appx_unlock_and_delete.end
 echo [appx_unlock_and_delete().end] %cll_dbg%
+exit /b 0
+
+
+REM scan specified file or dir for component link(s) in CS
+REM accept full path to file or dir as argument
+REM ...
+REM but on other side is speed and lack of spawning bunch of fsutil processes(one per file)
+:csc_scan_psl
+echo [csc_scan_psl()] "%~1" %cll_dbg%
+if "%~1" equ "" goto _csc_scan_psl.end
+set "trg_path=%~1"
+for /f "usebackq tokens=1,* delims= " %%j in (`echo %for_psl_dbg_hlpr%^
+$csc_keys ^= "$env:reg_CSC_keys_set".Split(' '^, [StringSplitOptions]::RemoveEmptyEntries^)^;^
+$csc_keys_cnt ^= $csc_keys.Count^;^
+$fs_objects ^= Get-Item -LiteralPath $env:trg_path -Force^;^
+if ^($fs_objects.Attributes -band 0x10^) { $fs_objects ^= Get-ChildItem -LiteralPath $env:trg_path -Recurse -Force }^
+foreach ^($fs_object in $fs_objects^) {^
+	if ^($fs_object.LinkType -ne 'HardLink'^) { continue }^
+	foreach ^($hard_link in $fs_object.Target^) {^
+		$sxs_pos ^= $hard_link.IndexOf^('\WinSxS\'^, [StringComparison]::OrdinalIgnoreCase^) + 8^;^
+		if ^($sxs_pos -lt 8^) { continue }^
+		$new_key ^= '"' + $hard_link.Substring($sxs_pos, $hard_link.indexOf('\', $sxs_pos) - $sxs_pos).ToLowerInvariant() + '"'^;^
+		if ^($csc_keys.Contains^($new_key^)^) { continue }^
+		"new key: $new_key"%for_psl_dbg%^;^
+		$csc_keys +^= $new_key^
+	}^
+}^
+$csc_new_keys_cnt ^= $csc_keys.Count - $csc_keys_cnt^;^
+;"new csc keys: $csc_new_keys_cnt"%for_psl_dbg%^;^
+;"$($csc_new_keys_cnt) $($csc_keys -join ' ')"^;^
+;^|powershell -noprofile - %for_out_hlpr%`) do (
+	if %%j neq 0 (
+		set "reg_CSC_keys_set=%%k" %cll_dbg%
+	)
+)
+
+%for_out_get%
+:_csc_scan_psl.end
+echo [csc_scan_psl().end] %cll_dbg%
 exit /b 0
