@@ -634,10 +634,10 @@ if (!$key_paths_acs) { exit }^
 $user_ident = [System.Security.Principal.NTAccount]$env:UserName;^
 $access_rule = [System.Security.AccessControl.RegistryAccessRule]::new($user_ident, 0xF003F, 3, 0, 0);^
 $hive_HKLM = [Microsoft.Win32.Registry]::LocalMachine;^
-$ntdll = Add-Type -Member '[DllImport("ntdll.dll")] public static extern int RtlAdjustPrivilege(ulong p, bool e, bool t, ref bool l);' -Name NtDll -PassThru;^
-$lp = 0;^
+$ntdll = Add-Type -Member '[DllImport("ntdll.dll")] public static extern int RtlAdjustPrivilege(uint p, bool e, bool t, ref bool l);' -Name NtDll -PassThru;^
+$lp = 0; $tgl_rslt = $ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp);^
 ;^
-if ($ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp) -eq 0) {^
+if ($tgl_rslt -eq 0) {^
 	"accessing"%psl_dbg%;^
 	foreach ($key_path in $key_paths_acs) {^
 		$key_path%psl_dbg%;^
@@ -651,9 +651,9 @@ if ($ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp) -eq 0) {^
 		$key_obj.Close();^
 	}^
 	$ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]$lp);^
-} else { "TakeOwnership enabling failed; attempt to remove anyway"%psl_dbg% }^
+} else { "TakeOwnership enabling failed (0x{0:x8}); attempt to remove anyway" -f $tgl_rslt%psl_dbg% }^
 ;"removing"%psl_dbg%;^
-foreach ($key_path in $key_paths_del) { $key_path%psl_dbg%; $hive_HKLM.DeleteSubKeyTree($key_path, 0) }^
+foreach ($key_path in $key_paths_del) { $key_path%psl_dbg%; $hive_HKLM.DeleteSubKeyTree($key_path) }^
 ;| powershell -noprofile - 
 
 :_reg_HKLM_keys_access_and_delete.end
