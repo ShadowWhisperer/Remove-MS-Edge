@@ -37,39 +37,46 @@ echo [main_script.start] %bat_dbg%
 
 echo [uac()] %bat_dbg%
 REM Get executor SID (Win 2003(XP x64) and up)
-for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "USER_SID=%%~b"
+for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "EXEC_SID=%%~b"
+REM When script elevates itself, the user SID should be passed as 1st argument (bad input here is not my fault)
+set "USER_SID=%~1"
 REM Check Admin permissions
 net session >NUL 2>&1
-echo err: %errorlevel%; SID: "%USER_SID%"; arg1: "%~1" %bat_dbg%
+echo err: %errorlevel%; EXEC_SID: "%EXEC_SID%"; USER_SID: "%USER_SID%" %bat_dbg%
 if %errorlevel% equ 0 goto uac.success
-REM When UAC disabled, elevation not works
-if "%USER_SID%" equ "%~1" echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
+REM When UAC disabled, elevation not works and SID never changes
+if /i "%EXEC_SID%" equ "%USER_SID%" (
+	echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
+)
+REM When 1st arg looks like valid NT_AUTHORITY SID, assume elevation by script (prevent infinite loop aka UAC bombing)
+if /i "%USER_SID:~0,6%" equ "S-1-5-" (
+	REM DO NOT put on the same line as condition: using another var after substring when its source is empty leads to hard fail
+	echo Built-in Admin account possibly corrupted & echo. & pause & exit /b %ISSUE_UAC%
+)
 REM Elevate with psl (don't try go around cmd /c)
 REM quotes levels              │┌┤            ├┐│ │      ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
 REM quotes open-closing(pipe)  <><            ><> <      ><><   >< ><          ><><>
-echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%USER_SID%"""""|powershell -noprofile - %bat_log%
+echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%EXEC_SID%"""""|powershell -noprofile - %bat_log%
 echo [uac().elevated] err: "%errorlevel%" %bat_dbg%
 exit /b %errorlevel%
+
+REM Admin permissions granted, executor SID may be a SID of Built-in Admin account if it's enabled
 :uac.success
 echo [uac().success] %bat_dbg%
-
-REM Admin permissions granted, executor SID is admin SID
-set "ADMIN_SID=%USER_SID%"
-REM For automaters: when use privileged profile, specify "-auto" as 1st argument to bypass confirmation
+REM 1st arg looks like valid rev.1 SID (assume elevation by script)
+if /i "%USER_SID:~0,4%" equ "S-1-" goto uac.done
+REM 1st arg does not look like valid SID (elevation NOT by script)
+set "USER_SID=%EXEC_SID%"
+REM When Built-in Admin account disabled, SID does not change on elevation and usually match the condition
+if "%EXEC_SID:~-4%" neq "-500" goto uac.done
+REM For automaters: when Built-in Admin account enabled, specify "-auto" as 1st argument to bypass confirmation
 if /i "%~1" equ "-auto" goto uac.done
-REM When script elevates itself, the user SID should be passed as 1st argument
-if "%~1" neq "" goto uac.usid_set
-REM User use Admin account or elevates script by hands
+REM Built-in Admin account enabled and script not self elevated nor automated
 choice /c yn /n /m "Logged as Admin? [Y,N]"
 REM Check for positive answer, anything else considered as No
 echo answer: %errorlevel% %bat_dbg%
 if %errorlevel% equ 1 goto uac.done
 echo Please, run script without elevation & echo. & pause & exit /b %ISSUE_UAC%
-
-:uac.usid_set
-echo [uac().usid_set] %bat_dbg%
-REM bad input here is not my fault
-set "USER_SID=%~1"
 
 :uac.done
 echo [uac().done] %bat_dbg%
