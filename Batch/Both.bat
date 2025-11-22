@@ -89,11 +89,10 @@ if %errorlevel% equ 0 set "has_net=1"
 echo has network: %has_net% %bat_dbg%
 
 REM prepare architecture-depend stuff
-REM note: name of such files are the same, regardless of arch
-REM in case of setup.exe it's just for simplicity
+REM note: name of such files are arch-less on usage
+REM in case of setup.exe it's just for simplicity/consistency
 REM in case of sqlite.dll it's required, otherwise "dll not found" error pops out on usage
-REM for universality purposes there a possible lazy-bypass - script-time post-download hardlink
-REM if implemented, all platform-specific versions could be cached and used later e.g. in offline environment
+REM files stored with arch-rich names(better for offline scenario), then hardlinks with arch-less names created
 echo - Obtaining required files
 echo [prepare()] %bat_dbg%
 goto prepare.%PROCESSOR_ARCHITECTURE%
@@ -105,22 +104,28 @@ echo [prepare().amd64] %bat_dbg%
 set "x86ProgramsFolder=%ProgramFiles(x86)%"
 
 call :file_obtain^
- "setup.exe"^
+ "setup.x64.exe"^
  "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
  "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
- "file_setup"^
+ "file_setup_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
 call :file_obtain^
- "System.Data.SQLite.dll"^
+ "System.Data.SQLite.x64.dll"^
  "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
  "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
- "file_SQLite"^
+ "file_SQLite_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-goto prepare.done
+REM prepare names for hardlinks
+REM it made so, cuz files has several possible storage locations (%dp0 or %Temp%)
+REM which one will be in use is unknown
+set "file_setup=%file_setup_loc:.x64.=.%"
+set "file_SQLite=%file_SQLite_loc:.x64.=.%"
+
+goto prepare.end
 
 
 :prepare.x86
@@ -130,24 +135,36 @@ set "x86ProgramsFolder=%ProgramFiles%"
 
 REM Thanks to @Ameterius for the 32bit setup.exe
 call :file_obtain^
- "setup.exe"^
+ "setup.x86.exe"^
  "97935c67fe17c388cff6c498b565130f9262ea9518150303fff08576c67cfd9d"^
  "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
- "file_setup"^
+ "file_setup_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
 call :file_obtain^
- "System.Data.SQLite.dll"^
+ "System.Data.SQLite.x86.dll"^
  "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
  "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
- "file_SQLite"^
+ "file_SQLite_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-goto prepare.done
+REM prepare hardlinks names
+set "file_setup=%file_setup_loc:.x86.=.%"
+set "file_SQLite=%file_SQLite_loc:.x86.=.%"
 
-:prepare.done
+goto prepare.end
+
+:prepare.end
+echo [prepare().end] %bat_dbg%
+REM delete possibly existing files of previous version or links, remained from hard failure
+del /f /q "%file_setup%" %bat_log%
+del /f /q "%file_SQLite%" %bat_log%
+REM create new hardlinks (will looks like real files)
+fsutil hardlink create "%file_setup%" "%file_setup_loc%" %bat_log%
+fsutil hardlink create "%file_SQLite%" "%file_SQLite_loc%" %bat_log%
+
 echo x86ProgramsFolder: %x86ProgramsFolder% %bat_dbg%
 echo [prepare().done] %bat_dbg%
 
@@ -390,6 +407,10 @@ echo [extra_cleanup().end] %bat_dbg%
 REM Main script end
 echo - Edge removal complete
 echo [main_script.end] %bat_dbg%
+REM remove hardlinks
+del /f /q "%file_setup%" %bat_log%
+del /f /q "%file_SQLite%" %bat_log%
+echo [main_script.done] %bat_dbg%
 exit /b 0
 
 

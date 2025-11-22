@@ -90,30 +90,39 @@ goto prepare.%PROCESSOR_ARCHITECTURE%
 echo [prepare().amd64] %bat_dbg%
 
 call :file_obtain^
- "System.Data.SQLite.dll"^
+ "System.Data.SQLite.x64.dll"^
  "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
  "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
- "file_SQLite"^
+ "file_SQLite_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-goto prepare.done
+set "file_SQLite=%file_SQLite_loc:.x64.=.%"
+
+goto prepare.end
 
 
 :prepare.x86
 echo [prepare().x86] %bat_dbg%
 
 call :file_obtain^
- "System.Data.SQLite.dll"^
+ "System.Data.SQLite.x86.dll"^
  "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
  "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
- "file_SQLite"^
+ "file_SQLite_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-goto prepare.done
+set "file_SQLite=%file_SQLite_loc:.x86.=.%"
 
-:prepare.done
+goto prepare.end
+
+:prepare.end
+echo [prepare().end] %bat_dbg%
+REM create hardlinks
+del /f /q "%file_SQLite%" %bat_log%
+fsutil hardlink create "%file_SQLite%" "%file_SQLite_loc%" %bat_log%
+
 echo [prepare().done] %bat_dbg%
 
 
@@ -193,6 +202,9 @@ echo [cleanup().end] %bat_dbg%
 REM Main script end
 echo - Edge removal complete
 echo [main_script.end] %bat_dbg%
+REM remove hardlinks
+del /f /q "%file_SQLite%" %bat_log%
+echo [main_script.done] %bat_dbg%
 exit /b 0
 
 
