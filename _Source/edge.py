@@ -33,7 +33,7 @@ PROGRAM_DATA = os.environ.get("ProgramData", "C:\\ProgramData")
 is_64bit_windows = "ProgramFiles(x86)" in os.environ
 access_flag = winreg.KEY_WRITE | (winreg.KEY_WOW64_64KEY if is_64bit_windows else 0)
 # 32 or 64bit - setup.exe
-setup_name = "setup.exe" if is_64bit_windows else "setupi386.exe"
+setup_name = "setup.x64.exe" if is_64bit_windows else "setup.x86.exe"
 src = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(__file__)), setup_name)
 
 # Get user profiles

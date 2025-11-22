@@ -108,8 +108,8 @@ set "x86ProgramsFolder=%ProgramFiles(x86)%"
 
 call :file_obtain^
  "setup.x64.exe"^
- "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
- "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
+ "0950336e0d633eb645e0cf66780d2102a182caa184264d4f62146fe229f636e7"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.x64.exe"^
  "file_setup_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
@@ -140,7 +140,7 @@ REM Thanks to @Ameterius for the 32bit setup.exe
 call :file_obtain^
  "setup.x86.exe"^
  "97935c67fe17c388cff6c498b565130f9262ea9518150303fff08576c67cfd9d"^
- "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.x86.exe"^
  "file_setup_loc"^
  %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
