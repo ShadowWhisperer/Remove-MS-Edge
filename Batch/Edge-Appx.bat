@@ -20,11 +20,12 @@ if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
 echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
 :arch.pass
 
+set "SCRIPT_VERSION=11/22/2025"
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also see Both.bat for details
 call :log_lvl.debug "%~1"
 
-title Edge Remover - 8/16/2025
+title Edge Remover - %SCRIPT_VERSION%
 echo [main_script.start] %bat_dbg%
 
 
@@ -266,8 +267,8 @@ set "ecm=/k"
 REM resolves issue with accessing log file on elevation
 timeout /t 1 /nobreak >NUL 2>&1
 REM reset log file if this is not elevation re-run (bad check, cuz someone may pass an argument)
-if "%~1" equ "" echo %~nx0 >"%~dpn0_dbg.log"
-if /i "%~1" equ "-auto" echo %~nx0 >"%~dpn0_dbg.log"
+if "%~1" equ "" echo %~nx0 %SCRIPT_VERSION% >"%~dpn0_dbg.log"
+if /i "%~1" equ "-auto" echo %~nx0 %SCRIPT_VERSION% >"%~dpn0_dbg.log"
 exit /b 0
 
 
