@@ -1,4 +1,6 @@
 @echo off & setlocal
+REM land "clever" users back to native env (Win Vista and up; start /b not used due to some oddities)
+if defined PROCESSOR_ARCHITEW6432 "%WinDir%\SysNative\cmd.exe" /c ""%~0" %*" & exit /b 0
 
 REM
 REM Check permissions and elevate if required
@@ -25,7 +27,7 @@ if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
 echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
 :arch.pass
 
-set "SCRIPT_VERSION=11/22/2025"
+set "SCRIPT_VERSION=11/26/2025"
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also set elevated cmd mode (%ecm% var; /c or /k )
 REM log_lvl.debug checks for argument, but due to the call, batch args "hidden", so pass it
@@ -54,7 +56,7 @@ if /i "%USER_SID:~0,6%" equ "S-1-5-" (
 	REM DO NOT put on the same line as condition: using another var after substring when its source is empty leads to hard fail
 	echo Built-in Admin account possibly corrupted & echo. & pause & exit /b %ISSUE_UAC%
 )
-REM Elevate with psl (don't try go around cmd /c)
+REM Elevate with psl (don't try go around cmd /c, there are 3 reasons for this)
 REM quotes levels              │┌┤            ├┐│ │      ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
 REM quotes open-closing(pipe)  <><            ><> <      ><><   >< ><          ><><>
 echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%EXEC_SID%"""""|powershell -noprofile - %bat_log%
