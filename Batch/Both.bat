@@ -1,4 +1,6 @@
 @echo off & setlocal
+REM land "clever" users back to native env (Win Vista and up; start /b not used due to some oddities)
+if defined PROCESSOR_ARCHITEW6432 "%WinDir%\SysNative\cmd.exe" /c ""%~0" %*" & exit /b 0
 
 REM
 REM Check permissions and elevate if required
@@ -17,52 +19,67 @@ set "ISSUE_UAC=2"
 set "ISSUE_NETWORK=3"
 set "ISSUE_DOWNLOAD=4"
 set "ISSUE_HASH=5"
+set "ISSUE_ARCH=6"
 
+REM check for architecture (x86 and amd64 are supported, arm - not)
+if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" goto arch.pass
+if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
+echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
+:arch.pass
+
+set "SCRIPT_VERSION=11/26/2025"
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also set elevated cmd mode (%ecm% var; /c or /k )
 REM log_lvl.debug checks for argument, but due to the call, batch args "hidden", so pass it
 call :log_lvl.debug "%~1"
 
-title Edge Remover - 11/18/2025
+title Edge Remover - %SCRIPT_VERSION%
 echo [main_script.start] %bat_dbg%
 
 
 
 echo [uac()] %bat_dbg%
 REM Get executor SID (Win 2003(XP x64) and up)
-for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "USER_SID=%%~b"
+for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "EXEC_SID=%%~b"
+REM When script elevates itself, the user SID should be passed as 1st argument (bad input here is not my fault)
+set "USER_SID=%~1"
 REM Check Admin permissions
 net session >NUL 2>&1
-echo err: %errorlevel%; SID: "%USER_SID%"; arg1: "%~1" %bat_dbg%
+echo err: %errorlevel%; EXEC_SID: "%EXEC_SID%"; USER_SID: "%USER_SID%" %bat_dbg%
 if %errorlevel% equ 0 goto uac.success
-REM When UAC disabled, elevation not works
-if "%USER_SID%" equ "%~1" echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
-REM Elevate with psl (don't try go around cmd /c)
-REM quotes levels              │┌┤            ├┐│ │   ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
-REM quotes open-closing(pipe)  <><            ><> <   ><><   >< ><          ><><>
-echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%USER_SID%"""""|powershell -noprofile - %bat_log%
+REM When UAC disabled, elevation not works and SID never changes
+if /i "%EXEC_SID%" equ "%USER_SID%" (
+	echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
+)
+REM When 1st arg looks like valid NT_AUTHORITY SID, assume elevation by script (prevent infinite loop aka UAC bombing)
+if /i "%USER_SID:~0,6%" equ "S-1-5-" (
+	REM DO NOT put on the same line as condition: using another var after substring when its source is empty leads to hard fail
+	echo Built-in Admin account possibly corrupted & echo. & pause & exit /b %ISSUE_UAC%
+)
+REM Elevate with psl (don't try go around cmd /c, there are 3 reasons for this)
+REM quotes levels              │┌┤            ├┐│ │      ┌┤┌┤   ├┐ ┌┤          ├┐├┐│
+REM quotes open-closing(pipe)  <><            ><> <      ><><   >< ><          ><><>
+echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%EXEC_SID%"""""|powershell -noprofile - %bat_log%
 echo [uac().elevated] err: "%errorlevel%" %bat_dbg%
 exit /b %errorlevel%
+
+REM Admin permissions granted, executor SID may be a SID of Built-in Admin account if it's enabled
 :uac.success
 echo [uac().success] %bat_dbg%
-
-REM Admin permissions granted, executor SID is admin SID
-set "ADMIN_SID=%USER_SID%"
-REM For automaters: when use privileged profile, specify "-auto" as 1st argument to bypass confirmation
+REM 1st arg looks like valid rev.1 SID (assume elevation by script)
+if /i "%USER_SID:~0,4%" equ "S-1-" goto uac.done
+REM 1st arg does not look like valid SID (elevation NOT by script)
+set "USER_SID=%EXEC_SID%"
+REM When Built-in Admin account disabled, SID does not change on elevation and usually match the condition
+if "%EXEC_SID:~-4%" neq "-500" goto uac.done
+REM For automaters: when Built-in Admin account enabled, specify "-auto" as 1st argument to bypass confirmation
 if /i "%~1" equ "-auto" goto uac.done
-REM When script elevates itself, the user SID should be passed as 1st argument
-if "%~1" neq "" goto uac.usid_set
-REM User use Admin account or elevates script by hands
+REM Built-in Admin account enabled and script not self elevated nor automated
 choice /c yn /n /m "Logged as Admin? [Y,N]"
 REM Check for positive answer, anything else considered as No
 echo answer: %errorlevel% %bat_dbg%
 if %errorlevel% equ 1 goto uac.done
 echo Please, run script without elevation & echo. & pause & exit /b %ISSUE_UAC%
-
-:uac.usid_set
-echo [uac().usid_set] %bat_dbg%
-REM bad input here is not my fault
-set "USER_SID=%~1"
 
 :uac.done
 echo [uac().done] %bat_dbg%
@@ -74,46 +91,85 @@ ipconfig | find "IPv" >NUL 2>&1
 if %errorlevel% equ 0 set "has_net=1"
 echo has network: %has_net% %bat_dbg%
 
-REM detect OS bit and obtain correct setup
-REM Thanks to @Ameterius for the 32bit setup,exe
+REM prepare architecture-depend stuff
+REM note: name of such files are arch-less on usage
+REM in case of setup.exe it's just for simplicity/consistency
+REM in case of sqlite.dll it's required, otherwise "dll not found" error pops out on usage
+REM files stored with arch-rich names(better for offline scenario), then hardlinks with arch-less names created
 echo - Obtaining required files
-if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
-    call :file_obtain^
-     "setup.exe"^
-     "4963532e63884a66ecee0386475ee423ae7f7af8a6c6d160cf1237d085adf05e"^
-     "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.exe"^
-     "file_setup"^
-     %bat_log%
-) else (
-    call :file_obtain^
-     "setup.exe"^
-     "97935C67FE17C388CFF6C498B565130F9262EA9518150303FFF08576C67CFD9D"^
-     "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setupi386.exe"^
-     "file_setup"^
-     %bat_log%
-)
+echo [prepare()] %bat_dbg%
+goto prepare.%PROCESSOR_ARCHITECTURE%
+
+
+:prepare.amd64
+echo [prepare().amd64] %bat_dbg%
+
+set "x86ProgramsFolder=%ProgramFiles(x86)%"
+
+call :file_obtain^
+ "setup.x64.exe"^
+ "0950336e0d633eb645e0cf66780d2102a182caa184264d4f62146fe229f636e7"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.x64.exe"^
+ "file_setup_loc"^
+ %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-REM dll name should not be changed, otherwise "dll not found" error pops out on usage
-REM lazy bypass - script-time post-download hardlink
-if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-) else (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-)
+call :file_obtain^
+ "System.Data.SQLite.x64.dll"^
+ "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
+ "file_SQLite_loc"^
+ %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-echo files obtained %bat_dbg%
+REM prepare names for hardlinks
+REM it made so, cuz files has several possible storage locations (%dp0 or %Temp%)
+REM which one will be in use is unknown
+set "file_setup=%file_setup_loc:.x64.=.%"
+set "file_SQLite=%file_SQLite_loc:.x64.=.%"
+
+goto prepare.end
+
+
+:prepare.x86
+echo [prepare().x86] %bat_dbg%
+
+set "x86ProgramsFolder=%ProgramFiles%"
+
+REM Thanks to @Ameterius for the 32bit setup.exe
+call :file_obtain^
+ "setup.x86.exe"^
+ "97935c67fe17c388cff6c498b565130f9262ea9518150303fff08576c67cfd9d"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/setup.x86.exe"^
+ "file_setup_loc"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "setup.exe" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+call :file_obtain^
+ "System.Data.SQLite.x86.dll"^
+ "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
+ "file_SQLite_loc"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+REM prepare hardlinks names
+set "file_setup=%file_setup_loc:.x86.=.%"
+set "file_SQLite=%file_SQLite_loc:.x86.=.%"
+
+goto prepare.end
+
+:prepare.end
+echo [prepare().end] %bat_dbg%
+REM delete possibly existing files of previous version or links, remained from hard failure
+del /f /q "%file_setup%" %bat_log%
+del /f /q "%file_SQLite%" %bat_log%
+REM create new hardlinks (will looks like real files)
+fsutil hardlink create "%file_setup%" "%file_setup_loc%" %bat_log%
+fsutil hardlink create "%file_SQLite%" "%file_SQLite_loc%" %bat_log%
+
+echo x86ProgramsFolder: %x86ProgramsFolder% %bat_dbg%
+echo [prepare().done] %bat_dbg%
 
 
 
@@ -134,17 +190,11 @@ echo packages queried %bat_dbg%
 
 
 
-REM ProgramFiles(x86) or ProgramFiles 32-bit Windows
-set "PF=%ProgramFiles(x86)%"
-if "%PF%"=="" set "PF=%ProgramFiles%"
-set "ProgramFolder=%PF%"
-
-
 REM #Uninstall
 echo [uninstall()] %bat_dbg%
 echo - Removing Edge
 echo [uninstall().edge.init] %bat_dbg%
-where "%ProgramFolder%\Microsoft\Edge\Application:*" %bat_log%
+where "%x86ProgramsFolder%\Microsoft\Edge\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.edge.done
 
 echo [uninstall().edge] %bat_dbg%
@@ -158,7 +208,7 @@ echo [uninstall().edge.done] %bat_dbg%
 
 echo - Removing WebView
 echo [uninstall().webview.init] %bat_dbg%
-where "%ProgramFolder%\Microsoft\EdgeWebView\Application:*" %bat_log%
+where "%x86ProgramsFolder%\Microsoft\EdgeWebView\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.webview.done
 
 echo [uninstall().webview] %bat_dbg%
@@ -217,10 +267,10 @@ echo [cleanup().edge] %bat_dbg%
 
 REM Delete Edge empty folders
 echo [cleanup().edge.dirs] %bat_dbg%
-rd /s /q "%ProgramFolder%\Microsoft\Edge" %bat_log%
-rd /s /q "%ProgramFolder%\Microsoft\EdgeCore" %bat_log%
-rd /s /q "%ProgramFolder%\Microsoft\EdgeUpdate" %bat_log%
-rd /s /q "%ProgramFolder%\Microsoft\Temp" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\Edge" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeCore" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeUpdate" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\Temp" %bat_log%
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" %bat_log%
 
 REM Delete Edge Update Tasks
@@ -250,7 +300,7 @@ echo [cleanup().webview] %bat_dbg%
 
 REM Delete WebView empty folders
 echo [cleanup().webview.dirs] %bat_dbg%
-rd /s /q "%ProgramFolder%\Microsoft\EdgeWebView" %bat_log%
+rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeWebView" %bat_log%
 
 echo [cleanup().webview.done] %bat_dbg%
 
@@ -360,6 +410,10 @@ echo [extra_cleanup().end] %bat_dbg%
 REM Main script end
 echo - Edge removal complete
 echo [main_script.end] %bat_dbg%
+REM remove hardlinks
+del /f /q "%file_setup%" %bat_log%
+del /f /q "%file_SQLite%" %bat_log%
+echo [main_script.done] %bat_dbg%
 exit /b 0
 
 
@@ -432,8 +486,8 @@ set "stp_dbg_rst=type NUL>"%Temp%\msedge_installer.log""
 REM resolves issue with accessing log file on elevation
 timeout /t 1 /nobreak >NUL 2>&1
 REM reset log file if this is not elevation re-run (bad check, cuz someone may pass an argument)
-if "%~1" equ "" echo %~nx0 >"%~dpn0_dbg.log"
-if /i "%~1" equ "-auto" echo %~nx0 >"%~dpn0_dbg.log"
+if "%~1" equ "" echo %~nx0 %SCRIPT_VERSION% >"%~dpn0_dbg.log"
+if /i "%~1" equ "-auto" echo %~nx0 %SCRIPT_VERSION% >"%~dpn0_dbg.log"
 exit /b 0
 
 
@@ -648,6 +702,7 @@ REM get access and delete registry keys in HKLM hive
 REM keys for TakeOwn+FullControl ONLY should be in reg_HKLM_keys_acs var
 REM keys that also should be deleted - in reg_HKLM_keys_del var
 REM DO NOT pass keys with values at tail
+REM TakeOwn+FullControl operation may fails, but removing attempt will be made anyway
 :reg_HKLM_keys_access_and_delete
 echo [reg_HKLM_keys_access_and_delete()] %cll_dbg%
 if defined reg_HKLM_keys_acs goto _reg_HKLM_keys_access_and_delete.psl
@@ -662,24 +717,26 @@ if (!$key_paths_acs) { exit }^
 $user_ident = [System.Security.Principal.NTAccount]$env:UserName;^
 $access_rule = [System.Security.AccessControl.RegistryAccessRule]::new($user_ident, 0xF003F, 3, 0, 0);^
 $hive_HKLM = [Microsoft.Win32.Registry]::LocalMachine;^
-$ntdll = Add-Type -Member '[DllImport("ntdll.dll")] public static extern int RtlAdjustPrivilege(ulong p, bool e, bool t, ref bool l);' -Name NtDll -PassThru;^
-$lp = 0; $ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp);^
+$ntdll = Add-Type -Member '[DllImport("ntdll.dll")] public static extern int RtlAdjustPrivilege(uint p, bool e, bool t, ref bool l);' -Name NtDll -PassThru;^
+$lp = 0; $tgl_rslt = $ntdll::RtlAdjustPrivilege(9, 1, 0, [ref]$lp);^
 ;^
-;"accessing"%psl_dbg%;^
-foreach ($key_path in $key_paths_acs) {^
-	$key_path%psl_dbg%;^
-	$key_obj = $hive_HKLM.OpenSubKey($key_path, 2, 0x80000);^
-	if (!$key_obj) { "key not found"%psl_dbg%; continue };^
-	^
-	($acl = $key_obj.GetAccessControl()).SetOwner($user_ident);^
-	$key_obj.SetAccessControl($acl);^
-	$acl.AddAccessRule($access_rule);^
-	$key_obj.SetAccessControl($acl);^
-	$key_obj.Close();^
-}^
+if ($tgl_rslt -eq 0) {^
+	"accessing"%psl_dbg%;^
+	foreach ($key_path in $key_paths_acs) {^
+		$key_path%psl_dbg%;^
+		$key_obj = $hive_HKLM.OpenSubKey($key_path, 2, 0x80000);^
+		if (!$key_obj) { "key not found"%psl_dbg%; continue };^
+		^
+		($acl = $key_obj.GetAccessControl()).SetOwner($user_ident);^
+		$key_obj.SetAccessControl($acl);^
+		$acl.AddAccessRule($access_rule);^
+		$key_obj.SetAccessControl($acl);^
+		$key_obj.Close();^
+	}^
+	$ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]$lp);^
+} else { "TakeOwnership enabling failed (0x{0:x8}); attempt to remove anyway" -f $tgl_rslt%psl_dbg% }^
 ;"removing"%psl_dbg%;^
-foreach ($key_path in $key_paths_del) { $key_path%psl_dbg%; $hive_HKLM.DeleteSubKeyTree($key_path, 0) }^
-$ntdll::RtlAdjustPrivilege(9, $lp, 0, [ref]0);^
+foreach ($key_path in $key_paths_del) { $key_path%psl_dbg%; $hive_HKLM.DeleteSubKeyTree($key_path) }^
 ;| powershell -noprofile - 
 
 :_reg_HKLM_keys_access_and_delete.end
