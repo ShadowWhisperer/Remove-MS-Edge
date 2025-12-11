@@ -1,3 +1,9 @@
+
+#
+# This project would not be possible without the support of these awesome people
+# https://github.com/ShadowWhisperer/Remove-MS-Edge/graphs/contributors
+#
+
 import ctypes      # Check if ran as an admin / Window title
 import getpass     # Take Permissions
 import os          # System OS paths
@@ -15,7 +21,7 @@ if not ctypes.windll.shell32.IsUserAnAdmin():
     sys.exit(1)
 
 # Title
-ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 8/12/2025 - ShadowWhisperer")
+ctypes.windll.kernel32.SetConsoleTitleW("Bye Bye Edge - 2.3 - ShadowWhisperer")
 
 # Hide CMD/Powershell
 def hide_console():
@@ -44,19 +50,22 @@ with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\
 ################################################################################################################################################
 
 # Edge
-EDGE_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\Edge\\Application\\pwahelper.exe")
-if os.path.exists(EDGE_PATH):
-    print("Removing Microsoft Edge")
-    cmd = [src, "--uninstall", "--system-level", "--force-uninstall"]
-    subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    os.system("timeout /t 2 >nul")
+for p in [os.path.join(PROGRAM_FILES_X86, "Microsoft\\Edge\\Application\\pwahelper.exe"), os.path.join(PROGRAM_FILES, "Microsoft\\Edge\\Application\\pwahelper.exe")]:
+    if os.path.exists(p):
+        print("Removing Microsoft Edge")
+        cmd = [src, "--uninstall", "--system-level", "--force-uninstall"]
+        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        os.system("timeout /t 2 >nul")
+        break
 
 # WebView
-EDGE_PATH = os.path.join(PROGRAM_FILES_X86, "Microsoft\\EdgeWebView\\Application")
-if os.path.exists(EDGE_PATH):
-    print("Removing WebView")
-    cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
-    subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+for p in [os.path.join(PROGRAM_FILES_X86, "Microsoft\\EdgeWebView\\Application"), os.path.join(PROGRAM_FILES, "Microsoft\\EdgeWebView\\Application")]:
+    if os.path.exists(p):
+        print("Removing Microsoft WebView")
+        cmd = [src, "--uninstall", "--msedgewebview", "--system-level", "--force-uninstall"]
+        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        os.system("timeout /t 2 >nul")
+        break
 
 # Edge / MicrosoftEdgeDevTools (Appx Packages)
 user_sid = subprocess.check_output(["powershell", "(New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([System.Security.Principal.SecurityIdentifier]).Value"], startupinfo=hide_console()).decode().strip()
@@ -65,41 +74,7 @@ edge_apps = [app.strip() for app in output.decode().strip().split('\r\n') if app
 base_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
 for app in edge_apps:
     for path in [f"{base_path}\\EndOfLife\\{user_sid}\\{app}", f"{base_path}\\EndOfLife\\S-1-5-18\\{app}", f"{base_path}\\Deprovisioned\\{app}"]:
-        winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, access=access_flag)
-
-
-################################################################################################################################################
-
-# Delete bad reg keys - https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/80
-def should_delete(name):
-    return not re.search(r'[a-zA-Z]', name) or ' ' in name
-
-def delete_tree(root, path):
-    try:
-        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | access_flag) as key:
-            while True:
-                try:
-                    delete_tree(root, f"{path}\\{winreg.EnumKey(key, 0)}")
-                except OSError:
-                    break
-        winreg.DeleteKeyEx(root, path, access=access_flag)
-    except:
-        pass
-
-def clean_subkeys(root, path):
-    try:
-        with winreg.OpenKey(root, path, 0, winreg.KEY_ALL_ACCESS | access_flag) as key:
-            for i in range(winreg.QueryInfoKey(key)[0]):
-                subkey = winreg.EnumKey(key, i)
-                subkey_path = f"{path}\\{subkey}"
-                if should_delete(subkey):
-                    delete_tree(root, subkey_path)
-                else:
-                    clean_subkeys(root, subkey_path)
-    except:
-        pass
-
-clean_subkeys(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore")
+        winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, path, 0, access_flag)
 
 ################################################################################################################################################
 
@@ -165,6 +140,7 @@ for root_dir in [os.path.join(SYSTEM_ROOT, "SystemApps"), os.path.join(PROGRAM_F
 
     run_cmd(["taskkill", "/IM", "MicrosoftEdgeUpdate.exe", "/F"])
     for folder in ["Edge", "EdgeCore", "EdgeUpdate", "Temp"]:
+        remove_directory(os.path.join(PROGRAM_FILES, "Microsoft", folder))
         remove_directory(os.path.join(PROGRAM_FILES_X86, "Microsoft", folder))
 
 # Files - System32
@@ -183,26 +159,28 @@ for f in os.scandir(os.path.join(SYSTEM_ROOT, "System32")):
 #  Denied
 ##############
 # AppUserModelId
+# Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Families
+# Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages
+# Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Families
 # SOFTWARE\Microsoft\Windows\CurrentVersion\AppModel\StateRepository\Cache\Package\Index\PackageFullName
 # SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId
-# Software\Microsoft\\Windows\\CurrentVersion\\AppModel\Repository\Families
-# Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages
+
 
 def delete_keys(hive, key, access):
     try:
         with winreg.OpenKey(hive, key, 0, access | winreg.KEY_READ) as k:
+            subkeys = []
+            i = 0
             while True:
                 try:
-                    subkey = winreg.EnumKey(k, 0)
-                    delete_keys(hive, f"{key}\\{subkey}", access)
+                    subkeys.append(winreg.EnumKey(k, i))
+                    i += 1
                 except OSError:
                     break
+        for subkey in subkeys:
+            delete_keys(hive, f"{key}\\{subkey}", access)
         winreg.DeleteKeyEx(hive, key, access)
-    except FileNotFoundError:
-        pass
-    except PermissionError:
-        pass
-    except Exception as e:
+    except:
         pass
 
 def delete_subkeys_with_prefix(hive, path, prefix, access):
@@ -318,7 +296,7 @@ def delete_hkcr_microsoftedge_keys():
                         try:
                             key_name = winreg.EnumKey(root, i)
                             if key_name.startswith(("MicrosoftEdge", "microsoft-edge")):
-                                delete_keys(hive, f"{base_path}\\{key_name}", access | winreg.KEY_ALL_ACCESS)
+                                delete_keys(hive, f"{base_path}\\{key_name}", access)
                             else:
                                 i += 1
                         except OSError:
