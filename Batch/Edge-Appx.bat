@@ -1,4 +1,6 @@
 @echo off & setlocal
+REM land "clever" users back to native env (Win Vista and up; start /b not used due to some oddities)
+if defined PROCESSOR_ARCHITEW6432 "%WinDir%\SysNative\cmd.exe" /c ""%~0" %*" & exit /b 0
 
 REM
 REM Check permissions and elevate if required
@@ -12,49 +14,64 @@ set "ISSUE_UAC=2"
 set "ISSUE_NETWORK=3"
 set "ISSUE_DOWNLOAD=4"
 set "ISSUE_HASH=5"
+set "ISSUE_ARCH=6"
 
+REM check for architecture (x86 and amd64 are supported, arm - not)
+if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" goto arch.pass
+if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
+echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
+:arch.pass
+
+set "SCRIPT_VERSION=11/26/2025"
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also see Both.bat for details
 call :log_lvl.debug "%~1"
 
-title Edge Remover - 8/16/2025
+title Edge Remover - %SCRIPT_VERSION%
 echo [main_script.start] %bat_dbg%
 
 
 
 echo [uac()] %bat_dbg%
 REM Get executor SID (Win 2003(XP x64) and up)
-for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "USER_SID=%%~b"
+for /f "skip=1 tokens=1,2 delims=," %%a in ('whoami /user /fo csv') do set "EXEC_SID=%%~b"
+REM When script elevates itself, the user SID should be passed as 1st argument (bad input here is not my fault)
+set "USER_SID=%~1"
 REM Check Admin permissions
 net session >NUL 2>&1
-echo err: %errorlevel%; SID: "%USER_SID%"; arg1: "%~1" %bat_dbg%
+echo err: %errorlevel%; EXEC_SID: "%EXEC_SID%"; USER_SID: "%USER_SID%" %bat_dbg%
 if %errorlevel% equ 0 goto uac.success
-REM When UAC disabled, elevation not works
-if "%USER_SID%" equ "%~1" echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
+REM When UAC disabled, elevation not works and SID never changes
+if /i "%EXEC_SID%" equ "%USER_SID%" (
+	echo Please, enable UAC and try again & echo. & pause & exit /b %ISSUE_UAC%
+)
+REM When 1st arg looks like valid NT_AUTHORITY SID, assume elevation by script (prevent infinite loop aka UAC bombing)
+if /i "%USER_SID:~0,6%" equ "S-1-5-" (
+	REM DO NOT put on the same line as condition: using another var after substring when its source is empty leads to hard fail
+	echo Built-in Admin account possibly corrupted & echo. & pause & exit /b %ISSUE_UAC%
+)
 REM Elevate with psl (don't try go around cmd /c; see Both.bat for quotes details)
-echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%USER_SID%"""""|powershell -noprofile - %bat_log%
+echo Start-Process -Verb RunAs """$env:COMSpec""" "%ecm% """"%~0"" ""%EXEC_SID%"""""|powershell -noprofile - %bat_log%
 echo [uac().elevated] err: "%errorlevel%" %bat_dbg%
 exit /b %errorlevel%
+
+REM Admin permissions granted, executor SID may be a SID of Built-in Admin account if it's enabled
 :uac.success
 echo [uac().success] %bat_dbg%
-
-REM Admin permissions granted, executor SID is admin SID
-set "ADMIN_SID=%USER_SID%"
-REM For automaters: when use privileged profile, specify "-auto" as 1st argument to bypass confirmation
+REM 1st arg looks like valid rev.1 SID (assume elevation by script)
+if /i "%USER_SID:~0,4%" equ "S-1-" goto uac.done
+REM 1st arg does not look like valid SID (elevation NOT by script)
+set "USER_SID=%EXEC_SID%"
+REM When Built-in Admin account disabled, SID does not change on elevation and usually match the condition
+if "%EXEC_SID:~-4%" neq "-500" goto uac.done
+REM For automaters: when Built-in Admin account enabled, specify "-auto" as 1st argument to bypass confirmation
 if /i "%~1" equ "-auto" goto uac.done
-REM When script elevates itself, the user SID should be passed as 1st argument
-if "%~1" neq "" goto uac.usid_set
-REM User use Admin account or elevates script by hands
+REM Built-in Admin account enabled and script not self elevated nor automated
 choice /c yn /n /m "Logged as Admin? [Y,N]"
 REM Check for positive answer, anything else considered as No
 echo answer: %errorlevel% %bat_dbg%
 if %errorlevel% equ 1 goto uac.done
 echo Please, run script without elevation & echo. & pause & exit /b %ISSUE_UAC%
-
-:uac.usid_set
-echo [uac().usid_set] %bat_dbg%
-REM bad input here is not my fault
-set "USER_SID=%~1"
 
 :uac.done
 echo [uac().done] %bat_dbg%
@@ -66,27 +83,50 @@ ipconfig | find "IPv" >NUL 2>&1
 if %errorlevel% equ 0 set "has_net=1"
 echo has network: %has_net% %bat_dbg%
 
+REM prepare architecture-depend stuff (see Both.bat for details)
 echo - Obtaining required files
-echo obtaining files %bat_dbg%
-REM dll name should not be changed (see Both.bat for details)
-if /i "%PROCESSOR_ARCHITECTURE%" equ "amd64" (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-) else (
-	call :file_obtain^
-	 "System.Data.SQLite.dll"^
-	 "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
-	 "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
-	 "file_SQLite"^
-	 %bat_log%
-)
+echo [prepare()] %bat_dbg%
+goto prepare.%PROCESSOR_ARCHITECTURE%
+
+
+:prepare.amd64
+echo [prepare().amd64] %bat_dbg%
+
+call :file_obtain^
+ "System.Data.SQLite.x64.dll"^
+ "1b3742c5bd1b3051ae396c6e62d1037565ca0cbbedb35b460f7d10a70c30376f"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x64.dll"^
+ "file_SQLite_loc"^
+ %bat_log%
 if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
 
-echo files obtained %bat_dbg%
+set "file_SQLite=%file_SQLite_loc:.x64.=.%"
+
+goto prepare.end
+
+
+:prepare.x86
+echo [prepare().x86] %bat_dbg%
+
+call :file_obtain^
+ "System.Data.SQLite.x86.dll"^
+ "845f7cbae72cf0a09a7f8740029ea9a15cb3a51c0b883b67b6ff1fc15fb26729"^
+ "https://raw.githubusercontent.com/ShadowWhisperer/Remove-MS-Edge/main/_Source/System.Data.SQLite.x86.dll"^
+ "file_SQLite_loc"^
+ %bat_log%
+if %errorlevel% neq 0 echo Cannot obtain "System.Data.SQLite.dll" (%errorinfo%) & echo. & pause & exit /b %errorlevel%
+
+set "file_SQLite=%file_SQLite_loc:.x86.=.%"
+
+goto prepare.end
+
+:prepare.end
+echo [prepare().end] %bat_dbg%
+REM create hardlinks
+del /f /q "%file_SQLite%" %bat_log%
+fsutil hardlink create "%file_SQLite%" "%file_SQLite_loc%" %bat_log%
+
+echo [prepare().done] %bat_dbg%
 
 
 
@@ -165,6 +205,9 @@ echo [cleanup().end] %bat_dbg%
 REM Main script end
 echo - Edge removal complete
 echo [main_script.end] %bat_dbg%
+REM remove hardlinks
+del /f /q "%file_SQLite%" %bat_log%
+echo [main_script.done] %bat_dbg%
 exit /b 0
 
 
@@ -226,8 +269,8 @@ set "ecm=/k"
 REM resolves issue with accessing log file on elevation
 timeout /t 1 /nobreak >NUL 2>&1
 REM reset log file if this is not elevation re-run (bad check, cuz someone may pass an argument)
-if "%~1" equ "" echo %~nx0 >"%~dpn0_dbg.log"
-if /i "%~1" equ "-auto" echo %~nx0 >"%~dpn0_dbg.log"
+if "%~1" equ "" echo %~nx0 %SCRIPT_VERSION% >"%~dpn0_dbg.log"
+if /i "%~1" equ "-auto" echo %~nx0 %SCRIPT_VERSION% >"%~dpn0_dbg.log"
 exit /b 0
 
 
