@@ -14,6 +14,7 @@
 - Microsoft Photos App (Edit)
 - PowerToys File Explorer add-ons utility
 - Quicken
+- Roblox
 - Safing Portmaster
 - Windows Mail  
 - Xbox App
