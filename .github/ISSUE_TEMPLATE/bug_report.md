@@ -11,4 +11,5 @@ assignees: ''
  - Bit: [32/64]  
  - Edition: [Home, LTSC, Pro]  
  - Remover: [Batch/Exe]  
- - Did you try removing Edge prior to this: [Yes/No]
+ - Did you use some other method to attemt Edge removal: [Yes/No]
+ - If "virus" related, read [HERE](https://github.com/ShadowWhisperer/Remove-MS-Edge/issues/48)
