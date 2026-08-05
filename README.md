@@ -22,20 +22,18 @@
 ```
 
 **EXE Version**  
-
 [Edge Only](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe)  
 [No Terminal](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeTerm.exe) - Edge only, with no terminal. Useful for Task Scheduler  
 [Edge + WebView ](https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-EdgeWeb.exe)  
 
 <br>  
 
-**Build From Source**  
+**Build .exe version from source**  
 ```pyinstaller --onefile --noconsole -i icon.ico -n Remove-Edge.exe edge.py --add-data "setup.x64.exe;." --add-data "setup.x86.exe;."```  
 
 <br>
 
-**Batch Version** (Mostly by [XakerTwo](https://github.com/XakerTwo))
-
+**Batch Version** (Mostly by [XakerTwo](https://github.com/XakerTwo))  
 [Both](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Both.bat?raw=true) - Removes both Edge, and WebView.  
 [Edge](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge.bat?raw=true) - Removes Edge and Appx version of Edge only.  
 [Edge-Appx](https://github.com/ShadowWhisperer/Remove-MS-Edge/blob/main/Batch/Edge-Appx.bat?raw=true) - Remove Appx version of Edge only. Leave Webview / Chrome version alone.  
@@ -43,8 +41,10 @@
 <br>
 
 **Additional Files**  
-
 Install [Edge](https://www.microsoft.com/en-us/edge/business/download?form=MA13FJ)  
 Install [WebView](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)  
 
 Fix Update issues: [Batch Script](https://raw.githubusercontent.com/ShadowWhisperer/Fix-WinUpdates/refs/heads/main/Fix%20Updates.bat)  
+
+**Restore "Internet Explorer Compatibility" in Edge settings**  
+```reg add "HKLM\SOFTWARE\Microsoft\Internet Explorer\EdgeIntegration" /v "Supported" /t REG_DWORD /d 1 /f```  
