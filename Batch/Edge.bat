@@ -554,13 +554,22 @@ echo [edgecore_cleanup()] %cll_dbg%
 if not exist "%x86ProgramsFolder%\Microsoft\EdgeCore" goto _edgecore_cleanup.end
 
 set "webview2_ver="
-for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" /v DisplayVersion 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+if not defined webview2_ver (
+	for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" /v DisplayVersion 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+)
 echo webview2_ver: "%webview2_ver%" %cll_dbg%
+
+REM If unknown in-use version, don't delete anything.
+if not defined webview2_ver (
+	echo webview2_ver not found - skipping EdgeCore cleanup to avoid breaking WebView2 %cll_dbg%
+	goto _edgecore_cleanup.end
+)
 
 for /d %%d in ("%x86ProgramsFolder%\Microsoft\EdgeCore\*") do (
 	if /i not "%%~nxd" equ "%webview2_ver%" (
 		echo removing: "%%~d" %cll_dbg%
-		rd /s /q "%%~d"
+		rd /s /q "%%~d" %cll_dbg%
 	) else (
 		echo keeping ^(in use by WebView2^): "%%~d" %cll_dbg%
 	)
