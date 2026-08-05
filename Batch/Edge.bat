@@ -296,6 +296,12 @@ echo - Removing additional data
 echo [extra_cleanup()] %bat_dbg%
 REM Registry
 echo [extra_cleanup().registry.regular] %bat_dbg%
+
+REM -- Backup keys that are need for :edgecore_cleanup
+set "wv2_guid={F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+reg export "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\%wv2_guid%" "%TEMP%\wv2_wow.reg" /y %bat_log%
+reg export "HKLM\SOFTWARE\Microsoft\EdgeUpdate\Clients\%wv2_guid%" "%TEMP%\wv2_native.reg" /y %bat_log%
+
 reg delete "HKLM\SOFTWARE\Classes\AppID\MicrosoftEdgeUpdate.exe" /f %bat_log%
 reg delete "HKLM\SOFTWARE\Classes\AppID\{1FCBE96C-1697-43AF-9140-2897C7C69767}" /f %bat_log%
 reg delete "HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" /f %bat_log%
@@ -318,6 +324,10 @@ set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\WOW6432Node\Microsoft\Windo
 set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.BCHostServer" %bat_log%
 set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.ContentProcessServer" %bat_log%
 set "reg_HKLM_keys_del=%reg_HKLM_keys_del%\\SOFTWARE\Microsoft\WindowsRuntime\Server\Windows.Internal.WebRuntime.F12Server" %bat_log%
+
+REM -- Restore above keys :edgecore_cleanup
+if exist "%TEMP%\wv2_wow.reg" reg import "%TEMP%\wv2_wow.reg" %bat_log% & del /f /q "%TEMP%\wv2_wow.reg"
+if exist "%TEMP%\wv2_native.reg" reg import "%TEMP%\wv2_native.reg" %bat_log% & del /f /q "%TEMP%\wv2_native.reg"
 
 echo [extra_cleanup().registry.inaccessible] %bat_dbg%
 call :reg_HKLM_keys_access_and_delete %bat_log%
