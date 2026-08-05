@@ -238,7 +238,7 @@ echo [cleanup().edge] %bat_dbg%
 REM Delete Edge empty folders
 echo [cleanup().edge.dirs] %bat_dbg%
 rd /s /q "%x86ProgramsFolder%\Microsoft\Edge" %bat_log%
-call : %bat_log%
+call :edgecore_cleanup %bat_log%
 rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeUpdate" %bat_log%
 rd /s /q "%x86ProgramsFolder%\Microsoft\Temp" %bat_log%
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" %bat_log%
