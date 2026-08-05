@@ -238,7 +238,7 @@ echo [cleanup().edge] %bat_dbg%
 REM Delete Edge empty folders
 echo [cleanup().edge.dirs] %bat_dbg%
 rd /s /q "%x86ProgramsFolder%\Microsoft\Edge" %bat_log%
-rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeCore" %bat_log%
+call :edgecore_cleanup %bat_log%
 rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeUpdate" %bat_log%
 rd /s /q "%x86ProgramsFolder%\Microsoft\Temp" %bat_log%
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" %bat_log%
@@ -539,6 +539,37 @@ echo service removed %cll_dbg%
 
 :_service_remove.end
 echo [service_remove().end] %cll_dbg%
+exit /b 0
+
+
+REM EdgeCore holds the actual Edge/WebView2 engine binaries: each installed
+REM version (Edge browser and/or WebView2 Runtime) gets its own subfolder there.
+REM This script does not touch WebView2, but a blanket "rd /s /q" on EdgeCore
+REM deletes WebView2's active engine files too, breaking it (and anything
+REM depending on it, e.g. Windows Search, many Electron/embedded-browser apps).
+REM Only delete subfolders that do not match the currently registered WebView2
+REM Runtime version.
+:edgecore_cleanup
+echo [edgecore_cleanup()] %cll_dbg%
+if not exist "%x86ProgramsFolder%\Microsoft\EdgeCore" goto _edgecore_cleanup.end
+
+set "webview2_ver="
+for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+echo webview2_ver: "%webview2_ver%" %cll_dbg%
+
+for /d %%d in ("%x86ProgramsFolder%\Microsoft\EdgeCore\*") do (
+	if /i not "%%~nxd" equ "%webview2_ver%" (
+		echo removing: "%%~d" %cll_dbg%
+		rd /s /q "%%~d"
+	) else (
+		echo keeping ^(in use by WebView2^): "%%~d" %cll_dbg%
+	)
+)
+REM remove the now-empty parent folder; fails silently (as intended) if WebView2's subfolder is still there
+rd "%x86ProgramsFolder%\Microsoft\EdgeCore" 2>NUL
+
+:_edgecore_cleanup.end
+echo [edgecore_cleanup().end] %cll_dbg%
 exit /b 0
 
 
