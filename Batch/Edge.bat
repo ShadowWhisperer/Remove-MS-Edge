@@ -238,7 +238,7 @@ echo [cleanup().edge] %bat_dbg%
 REM Delete Edge empty folders
 echo [cleanup().edge.dirs] %bat_dbg%
 rd /s /q "%x86ProgramsFolder%\Microsoft\Edge" %bat_log%
-call :edgecore_cleanup %bat_log%
+call : %bat_log%
 rd /s /q "%x86ProgramsFolder%\Microsoft\EdgeUpdate" %bat_log%
 rd /s /q "%x86ProgramsFolder%\Microsoft\Temp" %bat_log%
 rd /s /q "%AllUsersProfile%\Microsoft\EdgeUpdate" %bat_log%
@@ -554,7 +554,13 @@ echo [edgecore_cleanup()] %cll_dbg%
 if not exist "%x86ProgramsFolder%\Microsoft\EdgeCore" goto _edgecore_cleanup.end
 
 set "webview2_ver="
-for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" /v DisplayVersion 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+if not defined webview2_ver (
+	for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+)
+if not defined webview2_ver (
+	for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" /v DisplayVersion 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
+)
 if not defined webview2_ver (
 	for /f "tokens=2,*" %%a in ('reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" /v DisplayVersion 2^>NUL ^| findstr /i "REG_SZ"') do set "webview2_ver=%%b"
 )
