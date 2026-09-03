@@ -16,7 +16,7 @@ The [latest release](https://github.com/surjolive/Remove-MS-Edge/releases/latest
 
 | File | Use |
 | --- | --- |
-| [Remove-Edge.exe](https://github.com/surjolive/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe) | Remove the Edge application and keep WebView2 installed. |
+| [Remove-Edge.exe](https://github.com/surjolive/Remove-MS-Edge/releases/download/2.3/Remove-EdgeWeb.exe) | Remove the Edge application and keep WebView2 installed. |
 | [Remove-EdgeWeb.exe](https://github.com/surjolive/Remove-MS-Edge/releases/latest/download/Remove-EdgeWeb.exe) | Remove Edge and the installed Edge WebView2 runtime. |
 | [Remove-NoTerm.exe](https://github.com/surjolive/Remove-MS-Edge/releases/latest/download/Remove-NoTerm.exe) | Edge-only removal without a visible terminal window; useful with Task Scheduler. |
 
