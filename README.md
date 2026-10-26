@@ -17,6 +17,7 @@
 - Rex Atmos for MSFS 2020
 - Roblox
 - Safing Portmaster
+- ShowMyPC
 - Windows Mail  
 - Xbox App
 - Tauri-based apps (OmniGet, Readest, etc.)
