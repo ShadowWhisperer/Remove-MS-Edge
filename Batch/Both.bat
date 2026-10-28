@@ -207,6 +207,7 @@ echo [uninstall().edge.done] %bat_dbg%
 
 
 echo - Removing WebView
+taskkill /im msedgewebview2.exe /f /t %bat_log%
 echo [uninstall().webview.init] %bat_dbg%
 where "%x86ProgramsFolder%\Microsoft\EdgeWebView\Application:*" %bat_log%
 if %errorlevel% neq 0 goto uninstall.webview.done
@@ -230,6 +231,8 @@ for /f "delims=" %%d in ('dir /b /ad "%LOCALAPPDATA%\Microsoft\EdgeWebView\Appli
 		%stp_dbg_get%
 	)
 )
+
+:uninstall.webview.evergreen.done
 
 echo - Removing AppX
 echo [uninstall().appx.init] %bat_dbg%
@@ -382,38 +385,6 @@ for %%f in ("%SystemRoot%\System32\MicrosoftEdge*.exe") do (
 	icacls "%%~f" /grant "%UserName%:F" /c %bat_log%
 	del /f /q "%%~f" %bat_log%
 )
-
-
-REM Malformed Keys
-echo - Fixing registry
-echo [extra_cleanup().registry.fix] %bat_dbg%
-setlocal EnableDelayedExpansion
-set "reg_path=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore"
-for /f "tokens=*" %%k in ('reg query "%reg_path%" /s 2^>NUL ^| findstr /b /i "%reg_path%"') do (
-	set "full_key=%%k"
-	set "delete_key=false"
-	set "reason="
-	for %%a in ("!full_key!") do set "key_name=%%~nxa"
-	REM Skip empty or unchanged names
-	if "!key_name!"=="" (
-		set "reason=empty key name"
-	) else if "!key_name!"=="!full_key!" (
-		set "reason=key name same as full path"
-	) else (
-		REM Check for space
-		set "spaced_key=!key_name: =!"
-		if not "!key_name!"=="!spaced_key!" (
-			set "delete_key=true"
-		) else (
-			REM Check for letters
-			echo(!key_name!| findstr /r /c:"[a-zA-Z]" >nul !key_name! | findstr /r /c:"[a-zA-Z]" >NUL
-			if !errorlevel! neq 0 set "delete_key=true"
-		)
-	)
-	if "!delete_key!"=="true" reg delete "!full_key!" /f >nul 2>&1
-)
-endlocal
-
 
 echo [extra_cleanup().end] %bat_dbg%
 
