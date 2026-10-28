@@ -25,7 +25,7 @@ if /i "%PROCESSOR_ARCHITECTURE%" equ "x86" goto arch.pass
 echo "%PROCESSOR_ARCHITECTURE%" platform is unsupported & echo. & pause & exit /b %ISSUE_ARCH%
 :arch.pass
 
-set "SCRIPT_VERSION=11/26/2025"
+set "SCRIPT_VERSION=10/28/2026"
 REM set logging verbosity ( log_lvl.none, log_lvl.errors, log_lvl.debug )
 REM also see Both.bat for details
 call :log_lvl.debug "%~1"
